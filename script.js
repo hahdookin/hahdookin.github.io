@@ -1,4 +1,4 @@
 function changeColor() {
     let head = document.getElementById('nameHeader');
-    head.style = "color:blue";
+    head.style = "color:tomato;";
 }
