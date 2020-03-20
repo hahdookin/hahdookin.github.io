@@ -3,7 +3,7 @@
 /* Bootstrap 4.0 carousel-fade fix */
 .carousel-fade .carousel-item {
   opacity: 0;
-  transition-duration: .6s;
+  transition-duration: 1.1s;
   transition-property: opacity;
 }
  .carousel-fade  .carousel-item.active,
