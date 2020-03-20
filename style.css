@@ -55,14 +55,6 @@ a:hover {
   text-shadow: 1px 1px 10px #222;
   padding-bottom: 1rem;
 }
-.btn-primary {
-  background-color: #6648b1;
-  border: 1px solid #6648b1;
-}
-.btn-primary:hover {
-  background-color: #563d7c;
-  border: 1px solid #563d7c;
-}
 .jumbotron {
   padding: 1rem;
   border-radius: 0;
