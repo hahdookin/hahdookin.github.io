@@ -6,7 +6,9 @@ html, body {
   font-family: 'Poppins', sans-serif;
   color: #222;
 }
-
+a:hover {
+  text-decoration: none;
+}
 .fa-keyboard { /* terminal icon in logo */
   color: #222;
 }
@@ -17,6 +19,9 @@ html, body {
 }
 .logo-footer {
   color: #d5d5d5;
+}
+.logo-footer:hover {
+  color: #707070;
 }
 #logo-footer {
   color: #d5d5d5;
