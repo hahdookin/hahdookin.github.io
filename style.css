@@ -25,6 +25,29 @@
 }
 /* End of fix */
  
+/* Code blocks */
+.function-keyword {
+  color: #569cd6;
+}
+.function-name {
+  color: #d7ba7d;
+}
+.variable {
+  color: #8bc9eb;
+}
+.string {
+  color: #cd905b;
+}
+.loop-keyword {
+  color: #c586c0;
+}
+.code-block {
+  background-color: rgb(246, 246, 246);
+  padding-right: 1.5rem;
+  padding-left: 1.5rem;
+  padding-bottom: 1.5rem; 
+}
+
 
 html {
   scroll-behavior: smooth;
