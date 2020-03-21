@@ -25,6 +25,19 @@
 }
 /* End of fix */
  
+/* Code blocks */
+.code-block {
+  background-color: rgb(250, 250, 250);
+  width: 15%;
+  padding: 1.2rem;
+}
+.code-block code {
+  color: #444;
+}
+.code-desc {
+  padding-top: 1.5rem;
+}
+
 html {
   scroll-behavior: smooth;
 }
