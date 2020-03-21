@@ -72,6 +72,20 @@
 }
 </code></pre>
         </div>
+        <!-- Another function-->
+        <div>
+<pre class="code-block"><code>
+<span class="function-keyword">function</span> <span class="function-name">diri</span>() {
+    <span class="function-keyword">local</span> curdirStr=<span class="string">""</span>
+    <span class="function-keyword">local</span> i=0
+    <span class="loop-keyword">for <span class="variable">d</span> in</span> */ ; <span class="loop-keyword">do</span>
+        curdirStr+=<span class="string">"[<span class="variable">$i</span>]<span class="variable">$d</span> "</span>
+        <span class="function-name">let</span> i++
+        <span class="loop-keyword">done</span>
+    <span class="function-name">echo</span> <span class="variable">$curdirStr</span>
+}
+</code></pre>
+                    </div>
         
     </div>
 </div>
