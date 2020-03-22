@@ -90,9 +90,31 @@
         </div> 
 
     </div>
+
     <div class="row container-fluid justify-content-center">
         <p>Get zero-indexed directory with &nbsp;<code class="samp-input">diri</code>&nbsp; and change to a directory with &nbsp;<code class="samp-input">cdi [index]</code>&nbsp; .</p>
     </div>
+    <hr>
+    
+    <!-- Another Function -->
+    <div class="col-mid-6 align-self-center">
+        <!-- Code div -->
+        <div>
+<pre class="code-block"><code>
+<span class="function-keyword">function</span> <span class="function-name">gitACP</span>() {
+    git add . 
+    git commit -m <span class="string">"<span class="variable">$1</span>"</span>
+    git push -u origin master
+}
+</code></pre>
+        </div>
+    </div>
+
+        <div class="row container-fluid justify-content-center">
+            <p>Add, commit, and push changes with &nbsp;<code class="samp-input">gitACP [message]</code>&nbsp; .</p>
+        </div>
+
+    
 </div>
 </div>
 
