@@ -47,6 +47,14 @@
   padding-left: 1.5rem;
   padding-bottom: 1.5rem; 
 }
+.samp-input {
+  background-color: #eee;
+  padding-top: .08rem;
+  padding-bottom: .08rem;
+  padding-right: .1rem;
+  padding-left: .15rem;
+  border-radius: 3px;
+}
 
 
 html {
