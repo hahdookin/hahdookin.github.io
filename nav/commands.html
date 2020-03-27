@@ -59,32 +59,37 @@
 
 <div class="container">
 <div class="row d-flex justify-content-center">
-    <div class="col-mid-6 align-self-center">
 
-        <!-- Code div -->
+    <div class="row container-fluid justify-content-center">
+        <p>Get zero-indexed directory with &nbsp;<code class="samp-input">diri</code>&nbsp; and change to a directory with &nbsp;<code class="samp-input">cdi [index]</code>&nbsp; .</p>
+    </div>
+
+    <div class="col-mid-6 align-self-center">
+        
+        <!-- cdi -->
         <div>
 <pre class="code-block"><code>
 <span class="function-keyword">function</span> <span class="function-name">cdi</span>() {
     <span class="function-keyword">local</span> thisdirArr=( )
-    <span class="loop-keyword">for <span class="variable">d</span> in</span> */ ; <span class="loop-keyword">do</span>
-        thisdirArr+=( <span class="string">"<span class="variable">$d</span>"</span> )
+    <span class="loop-keyword">for <span class="variable">f</span> in</span> *; <span class="loop-keyword">do</span>
+        thisdirArr+=( <span class="string">"<span class="variable">$f</span>"</span> )
         <span class="loop-keyword">done</span>
     <span class="function-name">cd</span> <span class="string">"<span class="variable">${PWD}</span>"</span>/<span class="string">"<span class="variable">${thisdirArr[$1]}</span>"</span>
 }
 </code></pre>
         </div>
 
-        <!-- Another function-->
+        <!-- diri-->
         <div>
 <pre class="code-block"><code>
 <span class="function-keyword">function</span> <span class="function-name">diri</span>() {
     <span class="function-keyword">local</span> curdirStr=<span class="string">""</span>
     <span class="function-keyword">local</span> i=0
-    <span class="loop-keyword">for <span class="variable">d</span> in</span> */ ; <span class="loop-keyword">do</span>
-        curdirStr+=<span class="string">"[<span class="variable">$i</span>]<span class="variable">$d</span> "</span>
-        <span class="function-name">let</span> i++
+    <span class="loop-keyword">for <span class="variable">f</span> in</span> *; <span class="loop-keyword">do</span>
+        curdirStr+=<span class="string">"[<span class="variable">$i</span>]<span class="variable">$f</span> "</span>
+        <span class="string">((</span>i++<span class="string">))</span>
         <span class="loop-keyword">done</span>
-    <span class="function-name">echo</span> <span class="variable">$curdirStr</span>
+    <span class="function-name">echo</span> <span class="string">"<span class="variable">$curdirStr</span>"</span>
 }
 </code></pre>
         </div> 
@@ -92,7 +97,7 @@
     </div>
 
     <div class="row container-fluid justify-content-center">
-        <p>Get zero-indexed directory with &nbsp;<code class="samp-input">diri</code>&nbsp; and change to a directory with &nbsp;<code class="samp-input">cdi [index]</code>&nbsp; .</p>
+        <p>Additionally, open a file or directory in default IDE with &nbsp;<code class="samp-input">codei</code>&nbsp; .</p>
     </div>
     <hr>
     
@@ -102,6 +107,8 @@
         <div>
 <pre class="code-block"><code>
 <span class="function-keyword">function</span> <span class="function-name">gitACP</span>() {
+    <span class="function-keyword">local</span> default_message=<span class="string">"Auto Commit"</span>
+    <span class="function-keyword">local</span> message=<span class="variable">${1</span>:-<span class="variable">$default_message}</span>
     git add . 
     git commit -m <span class="string">"<span class="variable">$1</span>"</span>
     git push -u origin master
