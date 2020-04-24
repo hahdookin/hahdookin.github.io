@@ -2,7 +2,7 @@
 
 /**
  * Sleeps function for set amount of time.
- * @param {number} ms   Time in ms to sleep for
+ * @param {Number} ms   Time in ms to sleep for
  */
 export function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -11,7 +11,7 @@ export function sleep(ms) {
 /**
  * Adds flickering '_' at end of string.
  * @param {Element} ele     Element to write to
- * @param {number}  time    Interval between flickers (ms)
+ * @param {Number}  time    Interval between flickers (ms)
  */
 export async function flicker(ele, time=500) {
     let content = ele.innerHTML;
@@ -27,7 +27,7 @@ export async function flicker(ele, time=500) {
 /**
  * Writes text one character at a time in a set time inteval.
  * @param {Element} ele    Element to write text
- * @param {number}  time   Interval between writing text (ms)
+ * @param {Number}  time   Interval between writing text (ms)
  */
 export async function writeText(ele, time=100) {
     let content = ele.innerHTML;

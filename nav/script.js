@@ -1,8 +1,12 @@
 'use strict'
-import * as utils from "../utils.js";
+import * as Utils from "../utils.js";
 
 // GLOBALS
 const mainTitle = document.getElementById('main-title');
 
+const canvas = document.getElementById('game') || null;
+if (canvas) {
+ 
+}
 
-utils.writeText(mainTitle)
+Utils.writeText(mainTitle)
