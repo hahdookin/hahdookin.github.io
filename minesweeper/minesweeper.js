@@ -146,7 +146,7 @@ class Board {
     
     
     drawBoard(canvas, cellSize=50) {
-        canvas.style = "background-color:lightgrey;border:1px solid black;";
+        canvas.style = "background-color:lightgrey;border:1px solid black";
 
         canvas.width = this.columns * cellSize;
         canvas.height = this.rows * cellSize;
@@ -169,10 +169,10 @@ class Board {
                 
                 this.locations[counter] = {
                     "val": this.board[y][x],
-                    "x": horiz,
-                    "y": vert,
-                    "xmax": horiz + cellSize,
-                    "ymax": vert + cellSize,
+                    "x": horiz + 10,
+                    "y": vert + 10,
+                    "xmax": horiz + cellSize + 10,
+                    "ymax": vert + cellSize + 10,
                     "visible": false,
                     "alreadyFound": false
                 }
@@ -181,6 +181,10 @@ class Board {
             }
         }
         console.log(this.locations);
+    }
+
+    openMultiple() {
+
     }
 
     // Need to show multiple if cells are 0 or a value recursively.
@@ -196,6 +200,8 @@ class Board {
                     ctx.fillStyle = "#000000";
                     ctx.fillText(this.board[y][x], horiz + cellSize/2, vert + cellSize/2);
 
+                    if (this.locations[counter]["val"] === 'x') window.alert("You lose!");
+
                     // Only draw string once
                     this.locations[counter]["alreadyFound"] = true;
                 }
@@ -205,32 +211,45 @@ class Board {
         }
     }
 }
-const p = document.getElementById('res')
-const canvas = document.getElementById('canvas');
 
-let b1 = new Board(6, 6);
-
-p.innerHTML = "Mines: " + b1.mines;
-
-console.log(b1);
-
-const cellSize = 50;
-b1.drawBoard(canvas, cellSize);
-
-canvas.addEventListener('click', event => {
+function createGame() {
+    const gameInfo = document.getElementById('res')
+    const canvas = document.getElementById('canvas');
     
-    for (let key in b1.locations) {
-        if ( // mouse click is in a cell's range
-            between(event.x, b1.locations[key]["x"], b1.locations[key]["xmax"]) && 
-            between(event.y, b1.locations[key]["y"], b1.locations[key]["ymax"])
-            ) {
-            b1.locations[key]["visible"] = true; // show cell
-            b1.showHidden(canvas, cellSize);
-                                 
-            break;
+    // let rows = Number(window.prompt("Rows?"));
+    // let columns = Number(window.prompt("Columns?"));
+    
+    // if (!(rows || columns)) return;
+
+    let rows = 5, columns = 5;
+    let b1 = new Board(rows, columns);
+    gameInfo.innerHTML = "Mines: " + b1.mines;
+    
+    console.log(b1);
+    
+    const cellSize = 75;
+    b1.drawBoard(canvas, cellSize);
+    
+    canvas.addEventListener('click', event => {
+        
+        for (let key in b1.locations) {
+            if ( // mouse click is in a cell's range
+                between(event.x, b1.locations[key]["x"], b1.locations[key]["xmax"]) && 
+                between(event.y, b1.locations[key]["y"], b1.locations[key]["ymax"])
+                ) {
+                b1.locations[key]["visible"] = true; // show cell
+                // if val is 0, call method to show others
+                b1.showHidden(canvas, cellSize);
+                                     
+                break;
+            }
         }
-    }
-})
+    })
+}
+
+
+createGame()
+
 
 
 
