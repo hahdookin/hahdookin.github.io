@@ -4,6 +4,10 @@ function getRandomInt(max) {
     return Math.floor(Math.random() * Math.floor(max));
 }
 
+function between(x, min, max) {
+    return x >= min && x <= max;
+}
+
 
 class Cell {
     constructor(val) {
@@ -23,6 +27,7 @@ class Board {
     constructor(rows, columns, mines=Math.max(rows, columns)) {
         if (!rows || !columns) return;
 
+        this.locations = {};
         this.board = [];
         this.totalCells = rows * columns;
         this.rows = rows;
@@ -137,7 +142,8 @@ class Board {
             }
         }
     }
-
+    // { "hash": [val, x, y, xmax, ymax]}
+    
     
     drawBoard(canvas, cellSize=50) {
         canvas.style = "background-color:lightgrey;border:1px solid black;";
@@ -146,35 +152,84 @@ class Board {
         canvas.height = this.rows * cellSize;
 
         let ctx = canvas.getContext("2d");
-              
+        
+        // Draws the grey rectangles
         for (let y = 0; y <= canvas.height; y += cellSize) {
             for (let x = 0; x <= canvas.width; x += cellSize) {
                 ctx.fillStyle = "#000000";
                 ctx.rect(x , y , x + cellSize, y + cellSize);
-                ctx.stroke();                    
+                ctx.stroke();              
             } 
         }
         
         // Please fix these ;(
+        let counter = 0;
         for (let y = 0, vert=0; y < this.rows; y++, vert+=cellSize) {
             for (let x = 0, horiz = 0; x < this.columns; x++, horiz+=cellSize) {
-                ctx.font = "15px Arial"
-                ctx.fillStyle = "#000000";
-                ctx.fillText(this.board[y][x], horiz + 25, vert + 25);
+                
+                this.locations[counter] = {
+                    "val": this.board[y][x],
+                    "x": horiz,
+                    "y": vert,
+                    "xmax": horiz + cellSize,
+                    "ymax": vert + cellSize,
+                    "visible": false,
+                    "alreadyFound": false
+                }
+
+                counter++;
+            }
+        }
+        console.log(this.locations);
+    }
+
+    // Need to show multiple if cells are 0 or a value recursively.
+    showHidden(canvas, cellSize=50) {
+        let ctx = canvas.getContext("2d");
+        let counter = 0;
+        for (let y = 0, vert=0; y < this.rows; y++, vert+=cellSize) {
+            for (let x = 0, horiz = 0; x < this.columns; x++, horiz+=cellSize) {
+                if (this.locations[counter]["visible"] && !this.locations[counter]["alreadyFound"]) {
+                    
+                    // Draws text of value on screen
+                    ctx.font = `${cellSize * 0.3}px Arial`
+                    ctx.fillStyle = "#000000";
+                    ctx.fillText(this.board[y][x], horiz + cellSize/2, vert + cellSize/2);
+
+                    // Only draw string once
+                    this.locations[counter]["alreadyFound"] = true;
+                }
+
+                counter++
             }
         }
     }
 }
-
-// Our canvas element
+const p = document.getElementById('res')
 const canvas = document.getElementById('canvas');
-let b1 = new Board(7, 7);
+
+let b1 = new Board(6, 6);
+
+p.innerHTML = "Mines: " + b1.mines;
 
 console.log(b1);
-b1.drawBoard(canvas, 50);
+
+const cellSize = 50;
+b1.drawBoard(canvas, cellSize);
 
 canvas.addEventListener('click', event => {
-    console.log(event.x, event.y);
+    
+    for (let key in b1.locations) {
+        if ( // mouse click is in a cell's range
+            between(event.x, b1.locations[key]["x"], b1.locations[key]["xmax"]) && 
+            between(event.y, b1.locations[key]["y"], b1.locations[key]["ymax"])
+            ) {
+            b1.locations[key]["visible"] = true; // show cell
+            b1.showHidden(canvas, cellSize);
+                                 
+            break;
+        }
+    }
 })
 
 
