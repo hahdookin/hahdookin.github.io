@@ -1,18 +1,13 @@
 'use strict'
 
+import * as Utils from '../utils.js';
+
 function getRandomInt(max) {
     return Math.floor(Math.random() * Math.floor(max));
 }
 
 function between(x, min, max) {
     return x >= min && x <= max;
-}
-
-
-class Cell {
-    constructor(val) {
-        this.value = val;
-    }
 }
 
 // board[row][column]
@@ -27,7 +22,7 @@ class Board {
     constructor(rows, columns, mines=Math.max(rows, columns)) {
         if (!rows || !columns) return;
 
-        //this.locations = {};
+        this.cellsClicked = 0;
         this.board = [];
         this.totalCells = rows * columns;
         this.rows = rows;
@@ -138,172 +133,125 @@ class Board {
                 }
 
                 this.board[i][j] = minesFound.toString();  
-
             }
         }
     }
-    
-    
-    // NO GOOD
-    // drawBoard(canvas, cellSize=50) {
-    //     canvas.style = "background-color:lightgrey;border:1px solid black";
 
-    //     canvas.width = this.columns * cellSize;
-    //     canvas.height = this.rows * cellSize;
-
-    //     let ctx = canvas.getContext("2d");
-        
-    //     // Draws the grey rectangles
-    //     for (let y = 0; y <= canvas.height; y += cellSize) {
-    //         for (let x = 0; x <= canvas.width; x += cellSize) {
-    //             ctx.fillStyle = "#000000";
-    //             ctx.rect(x , y , x + cellSize, y + cellSize);
-    //             ctx.stroke();              
-    //         } 
-    //     }
-        
-    //     // Please fix these ;(
-    //     let counter = 0;
-    //     for (let y = 0, vert=0; y < this.rows; y++, vert+=cellSize) {
-    //         for (let x = 0, horiz = 0; x < this.columns; x++, horiz+=cellSize) {
-                
-    //             this.locations[counter] = {
-    //                 "val": this.board[y][x],
-    //                 "x": horiz + 10,
-    //                 "y": vert + 10,
-    //                 "xmax": horiz + cellSize + 10,
-    //                 "ymax": vert + cellSize + 10,
-    //                 "visible": false,
-    //                 "alreadyFound": false
-    //             }
-
-    //             counter++;
-    //         }
-    //     }
-    //     console.log(this.locations);
-    // }
-
-    // openMultiple() {
-
-    // }
-
-    // // Need to show multiple if cells are 0 or a value recursively.
-    // showHidden(canvas, cellSize=50) {
-    //     let ctx = canvas.getContext("2d");
-    //     let counter = 0;
-    //     for (let y = 0, vert=0; y < this.rows; y++, vert+=cellSize) {
-    //         for (let x = 0, horiz = 0; x < this.columns; x++, horiz+=cellSize) {
-    //             if (this.locations[counter]["visible"] && !this.locations[counter]["alreadyFound"]) {
-                    
-    //                 // Draws text of value on screen
-    //                 ctx.font = `${cellSize * 0.3}px Arial`
-    //                 ctx.fillStyle = "#000000";
-    //                 ctx.fillText(this.board[y][x], horiz + cellSize/2, vert + cellSize/2);
-
-    //                 if (this.locations[counter]["val"] === 'X') window.alert("You lose!");
-
-    //                 // Only draw string once
-    //                 this.locations[counter]["alreadyFound"] = true;
-    //             }
-
-    //             counter++
-    //         }
-    //     }
-    // }
-
-}
-
-// function createGame(canvas, p, rows, columns, cellSize) {
-    
-    
-//     // let rows = Number(window.prompt("Rows?"));
-//     // let columns = Number(window.prompt("Columns?"));
-    
-//     if (!(rows || columns)) return;
-
-//     let b1 = new Board(rows, columns);
-//     p.innerHTML = "Mines: " + b1.mines;
-    
-//     console.log(b1);
-    
-//     b1.drawBoard(canvas, cellSize);
-    
-//     canvas.addEventListener('click', event => {
-        
-//         for (let key in b1.locations) {
-//             if ( // mouse click is in a cell's range
-//                 between(event.x, b1.locations[key]["x"], b1.locations[key]["xmax"]) && 
-//                 between(event.y, b1.locations[key]["y"], b1.locations[key]["ymax"])
-//                 ) {
-//                 b1.locations[key]["visible"] = true; // show cell
-//                 // if val is 0, call method to show others
-//                 b1.showHidden(canvas, cellSize);
-                                     
-//                 break;
-//             }
-//         }
-//     })
-//     window.addEventListener('keypress', event => {
-//         if (event.key === 'r') {
-//             b1.locations = {};
-//             b1.mines = 0;
-//             b1.board = [];
-//             createGame(canvas, gameInfo, 5, 5, 75);
-//         }
-//     })
-// }
-
-
-// const gameInfo = document.getElementById('res')
-// const canvas = document.getElementById('canvas');
-// createGame(canvas, gameInfo, 5, 5, 75)
-
-
-const board = new Board(10, 6);
-console.log(board);
-
-// Building a board of buttons
-const mainDiv = document.getElementById('new');
-for (let row = 0; row < board.rows; row++) {
-    let div = document.createElement('div');
-    mainDiv.appendChild(div);
-    for (let column = 0; column < board.columns; column++) {
-        let button = document.createElement('button');
-        button.innerHTML = "&nbsp;"
-
-        button.style = "color: transparent; background-color: lightgrey;font-family:monospace;";
-
-        // User clicks on a cell
-        button.onclick = event => { 
-            button.style = "background-color:white;disabled:true;font-family:monospace;";
-            button.innerHTML = board.board[row][column];
-            console.log(row, column);
-
-            // If user clicked a 0, open all other adjacent cells that arent a mine
-            if (board.board[row][column] === '0') {
-                console.log("ZERO");
-                // openMany();
-            } 
-
-            // If user clicked a mine, user lost
-            if (board.board[row][column] === 'X') {
-                console.log("MINE");
-                // Show game stats, other things
-            } 
-        }
-
-        div.appendChild(button);
-        
+    openMany(row, column) {
+        if (row) {};
     }
 }
 
+// Temp function
+async function loss() {
+    await Utils.sleep(100);
+    
+    
+    alert('You lost!');
+    await Utils.sleep(500);
+    return true;
+}
+
+const main = document.getElementById('main');
+
+function createGame() {
+    // Building a board of buttons
+    
+    // Creating a div and info para
+    let gDiv = document.createElement('div');
+    gDiv.id = 'gameDiv';
+    let gInfo = document.createElement('p');
+    gInfo.id = 'gameInfo';
+
+    main.appendChild(gDiv);
+    main.appendChild(gInfo);
+
+    const gameDiv = document.getElementById('gameDiv');
+    const gameInfo = document.getElementById('gameInfo');
+
+    // Our board object
+    const board = new Board(getRandomInt(5) + 3, getRandomInt(5) + 3);
+
+    for (let row = 0; row < board.rows; row++) {
+        let div = document.createElement('div');
+        gameDiv.appendChild(div);
+        for (let column = 0; column < board.columns; column++) {
+            let button = document.createElement('button');
+            button.innerHTML = "&nbsp;"
+    
+            button.style = "color: transparent; background-color: lightgrey;font-family:monospace;";
+    
+            // User clicks on a cell
+            button.onclick = () => { 
+                if (button.flagged) return;
+    
+                board.cellsClicked++;
+    
+                // If user clicked a mine, user lost
+                if (board.board[row][column] === 'X') {
+                    button.innerHTML = board.board[row][column];
+                    loss();
+                    main.removeChild(gameDiv);
+                    main.removeChild(gameInfo);
+                    createGame();
+                } 
+    
+                // Check if user won
+                if (board.cellsClicked === board.totalCells - board.mines) console.log("You won!");
+    
+                button.style = "background-color:white;font-family:monospace;";
+                button.disabled = true;
+                button.innerHTML = board.board[row][column];
+    
+                //console.log(row, column);
+    
+                // If user clicked a 0, open all other adjacent cells that arent a mine
+                if (board.board[row][column] === '0') {
+                    console.log("ZERO");
+                    // openMany();
+                } 
+    
+            }
+    
+            // Empty -> F -> ? -> Empty
+            button.onauxclick = () => {
+                if (button.flagged) { // Sets Question Mark
+                    button.style = "background-color:lightgrey;font-family:monospace;"
+                    button.innerHTML = "?";
+                    button.flagged = false;
+                    button.questionable = true;
+                } else if (button.questionable) { // Sets back to normal
+                    button.style = "color: transparent; background-color: lightgrey;font-family:monospace;";
+                    button.innerHTML = "&nbsp;";
+                    button.questionable = false;
+                } else {  // Sets Flag
+                    button.style = "background-color:lightgrey;font-family:monospace;color:red";
+                    button.innerHTML = "F";
+                    button.flagged = true;
+                }
+                
+            }
+    
+            // Disable context menu on buttons
+            button.addEventListener('contextmenu', event => { event.preventDefault(); }, false);
+    
+            div.appendChild(button);
+            
+        }
+    }
+    gameInfo.innerHTML = "Mines: " + board.mines;
+
+    // Pressing 'r' resets the game
+    document.addEventListener('keypress', event => {
+        if (event.key === 'r') {
+            main.removeChild(gameDiv);
+            main.removeChild(gameInfo);
+            createGame();
+        }
+    }, false)
+
+    console.log(document.childNodes);
+}
 
 
-
-
-
-
-
-
-
-
+createGame();
