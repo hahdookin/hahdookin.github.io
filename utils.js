@@ -1,7 +1,25 @@
 'use strict'
 
 /**
- * Sleeps function for set amount of time.
+ * Returns random integer from 0 to max non-inclusive.
+ * @param {Number} max Non-inclusive max in range
+ */
+export function getRandomInt(max) {
+    return Math.floor(Math.random() * Math.floor(max));
+}
+
+/**
+ * Checks if number is in between range.
+ * @param {Number} x    Number to check
+ * @param {Number} min  Lower bound
+ * @param {Number} max  Upper bound
+ */
+export function between(x, min, max) {
+    return x >= min && x <= max;
+}
+
+/**
+ * Sleeps async function for set amount of time.
  * @param {Number} ms   Time in ms to sleep for
  */
 export function sleep(ms) {
@@ -45,14 +63,8 @@ export async function writeText(ele, time=100) {
  * Waits a bit for smooth scroll to finish then writes text.
  * @param {Element} ele    Element to write text
  */
-export async function ssWriteText(ele) {
-    if (scrollComplete["projectsHeader"]) return;
-    scrollComplete["projectsHeader"] = true;
-    await sleep(500);
+export async function ssWriteText(ele, time=500) {
+    await sleep(time);
     writeText(ele);
 }
 
-// GLOBALS
-export let scrollComplete = {
-    "projectsHeader": false
-};

@@ -2,14 +2,6 @@
 
 import * as Utils from '../utils.js';
 
-function getRandomInt(max) {
-    return Math.floor(Math.random() * Math.floor(max));
-}
-
-function between(x, min, max) {
-    return x >= min && x <= max;
-}
-
 // board[row][column]
 class Board {
 
@@ -48,7 +40,7 @@ class Board {
         while (minesLeft) {
             for (let i = 0; i < this.board.length; i++) 
                 for (let j = 0; j < this.board[i].length; j++) {
-                    if (getRandomInt(15) === 1 && minesLeft && this.board[i][j] != 'X') {
+                    if (Utils.getRandomInt(15) === 1 && minesLeft && this.board[i][j] != 'X') {
                         this.board[i][j] = 'X';
                         minesLeft--;
                     }
@@ -142,20 +134,47 @@ class Board {
     }
 }
 
-// Temp function
-async function loss() {
-    await Utils.sleep(100);
-    
-    
-    alert('You lost!');
-    await Utils.sleep(500);
-    return true;
+/**
+ * 
+ * @param {HTMLDivElement} mainDiv Main div where game is occurring
+ */
+function disableAllButtons(mainDiv) {
+
+    let thing = mainDiv.children[0].children;
+    for (let i = 0; i < thing.length; i++) {
+        for (let j = 0; j < thing[i].children.length; j++) {
+            thing[i].children[j].disabled = true;
+        }
+    }
 }
 
-const main = document.getElementById('main');
+/**
+ * 
+ * @param {HTMLDivElement} mainDiv Main div where game is occurring
+ */
+function addResetButton(mainDiv) {
+    const resetButton = document.createElement('button');
+    resetButton.innerHTML = "New Game";
+    resetButton.id = 'resetButton';
+    resetButton.onclick = () => {
+        mainDiv.removeChild(gameDiv);
+        mainDiv.removeChild(gameInfo);
+        mainDiv.removeChild(resetButton);
+        createGame(main);
+    }
+    mainDiv.appendChild(resetButton);
+}
 
-function createGame() {
+/**
+ * Constructs the playing Minesweeper playing board.
+ * 
+ * Builds sub divs equal to the amount of rows in the board and buttons in each div equal to the amount of columns in the board.
+ * @param {HTMLDivElement} mainDiv Main div where the game and elements will be placed
+ * @param {Board} board A minesweeper board object
+ */
+function createGame(mainDiv, board) {
     // Building a board of buttons
+    if (!board) board = new Board(7,7);
     
     // Creating a div and info para
     let gDiv = document.createElement('div');
@@ -163,52 +182,66 @@ function createGame() {
     let gInfo = document.createElement('p');
     gInfo.id = 'gameInfo';
 
-    main.appendChild(gDiv);
-    main.appendChild(gInfo);
+    mainDiv.appendChild(gDiv);
+    mainDiv.appendChild(gInfo);
 
     const gameDiv = document.getElementById('gameDiv');
     const gameInfo = document.getElementById('gameInfo');
 
     // Our board object
-    const board = new Board(getRandomInt(5) + 3, getRandomInt(5) + 3);
 
     for (let row = 0; row < board.rows; row++) {
         let div = document.createElement('div');
         gameDiv.appendChild(div);
         for (let column = 0; column < board.columns; column++) {
+
             let button = document.createElement('button');
+            
+            // Initial look: Grey box, transparent text, monospace font
             button.innerHTML = "&nbsp;"
-    
-            button.style = "color: transparent; background-color: lightgrey;font-family:monospace;";
+            button.style.color = "transparent";
+            button.style.backgroundColor = "lightgrey";
+            button.style.fontFamily = "monospace";
+            button.onmouseenter = () => { button.style.backgroundColor = "Gainsboro"; }
+            button.onmouseleave = () => { button.style.backgroundColor = "lightgrey"; }
+            
     
             // User clicks on a cell
             button.onclick = () => { 
                 if (button.flagged) return;
-    
-                board.cellsClicked++;
-    
+                
+                // After clicked: White box, disabled, color text, displays what was chosen;
+                button.style.removeProperty('color');
+                button.style.backgroundColor = "white";
+                button.disabled = true;
+                button.innerHTML = board.board[row][column];
+
                 // If user clicked a mine, user lost
                 if (board.board[row][column] === 'X') {
-                    button.innerHTML = board.board[row][column];
-                    loss();
-                    main.removeChild(gameDiv);
-                    main.removeChild(gameInfo);
-                    createGame();
+                    
+                    disableAllButtons(mainDiv);
+                    gameInfo.innerHTML = "You lost!";
+
+                    addResetButton(mainDiv);
+                    
+                    
                 } 
     
                 // Check if user won
-                if (board.cellsClicked === board.totalCells - board.mines) console.log("You won!");
-    
-                button.style = "background-color:white;font-family:monospace;";
-                button.disabled = true;
-                button.innerHTML = board.board[row][column];
-    
-                //console.log(row, column);
+                board.cellsClicked++;
+                if (board.cellsClicked === board.totalCells - board.mines) {
+
+                    disableAllButtons(mainDiv);
+                    gameInfo.innerHTML = "You won!";
+
+                    addResetButton(mainDiv);
+
+                }
     
                 // If user clicked a 0, open all other adjacent cells that arent a mine
                 if (board.board[row][column] === '0') {
-                    console.log("ZERO");
-                    // openMany();
+                    button.style.color = "transparent";
+                    button.innerHTML = "&nbsp;";
                 } 
     
             }
@@ -216,16 +249,16 @@ function createGame() {
             // Empty -> F -> ? -> Empty
             button.onauxclick = () => {
                 if (button.flagged) { // Sets Question Mark
-                    button.style = "background-color:lightgrey;font-family:monospace;"
+                    button.style.removeProperty('color');
                     button.innerHTML = "?";
                     button.flagged = false;
                     button.questionable = true;
                 } else if (button.questionable) { // Sets back to normal
-                    button.style = "color: transparent; background-color: lightgrey;font-family:monospace;";
+                    button.style.color = "transparent";
                     button.innerHTML = "&nbsp;";
                     button.questionable = false;
                 } else {  // Sets Flag
-                    button.style = "background-color:lightgrey;font-family:monospace;color:red";
+                    button.style.color = "red";
                     button.innerHTML = "F";
                     button.flagged = true;
                 }
@@ -239,19 +272,18 @@ function createGame() {
             
         }
     }
+
     gameInfo.innerHTML = "Mines: " + board.mines;
 
     // Pressing 'r' resets the game
     document.addEventListener('keypress', event => {
         if (event.key === 'r') {
-            main.removeChild(gameDiv);
-            main.removeChild(gameInfo);
-            createGame();
+
         }
     }, false)
 
-    console.log(document.childNodes);
 }
 
-
-createGame();
+const board = new Board(7, 7);
+const main = document.getElementById('main');
+createGame(main, board);
