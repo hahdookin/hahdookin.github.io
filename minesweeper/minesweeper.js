@@ -197,6 +197,9 @@ function createGame(mainDiv, board) {
 
             let button = document.createElement('button');
             
+            button.row = row;
+            button.column = column;
+
             // Initial look: Grey box, transparent text, monospace font
             button.innerHTML = "&nbsp;"
             button.style.color = "transparent";
@@ -205,7 +208,9 @@ function createGame(mainDiv, board) {
             button.onmouseenter = () => { button.style.backgroundColor = "Gainsboro"; }
             button.onmouseleave = () => { button.style.backgroundColor = "lightgrey"; }
             
-    
+            button.value = board.board[row][column];
+
+
             // User clicks on a cell
             button.onclick = () => { 
                 if (button.flagged) return;
@@ -242,6 +247,28 @@ function createGame(mainDiv, board) {
                 if (board.board[row][column] === '0') {
                     button.style.color = "transparent";
                     button.innerHTML = "&nbsp;";
+                    //console.log(gameDiv.getElementsByTagName('button'));
+                    let buttons = gameDiv.getElementsByTagName('button');
+                    
+                    // Need to check if cell is a side/corner
+                    // Also consider removing value property on button
+                    // i.e:
+                    // if (board.board[row][column + 1].value !== 'X') buttons[row * board.rows + column + 1];
+
+                    // Cardinals
+                    if (buttons[row * board.rows + column + 1].value !== 'X') buttons[row * board.rows + column + 1].click();
+                    if (buttons[row * board.rows + column - 1].value !== 'X') buttons[row * board.rows + column - 1].click();
+                    if (buttons[(row + 1) * board.rows + column].value !== 'X') buttons[(row + 1) * board.rows + column].click();
+                    if (buttons[(row - 1) * board.rows + column].value !== 'X') buttons[(row - 1) * board.rows + column].click();
+
+                    // Ordinals
+                    if (buttons[(row + 1) * board.rows + column + 1].value !== 'X') buttons[(row + 1) * board.rows + column + 1].click();
+                    if (buttons[(row + 1) * board.rows + column - 1].value !== 'X') buttons[(row + 1) * board.rows + column - 1].click();
+                    if (buttons[(row - 1) * board.rows + column + 1].value !== 'X') buttons[(row - 1) * board.rows + column + 1].click();
+                    if (buttons[(row - 1) * board.rows + column - 1].value !== 'X') buttons[(row - 1) * board.rows + column - 1].click();
+                    
+
+                    console.log((row)*(board.rows) + column + 1);
                 } 
     
             }
