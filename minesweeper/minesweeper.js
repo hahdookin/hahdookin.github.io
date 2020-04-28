@@ -2,6 +2,26 @@
 
 import * as Utils from '../utils.js';
 
+class Stopwatch {
+    constructor(elem, interval) {
+        this.interval = interval;
+        this.timer = elem;
+        this.total = 0;
+        this.now = Date.now();
+        this.sw;
+    }
+    start() {
+        this.sw = setInterval(() => {
+            let cur = Date.now();
+            this.total = (cur - this.now);
+            this.timer.innerHTML = (this.total/1000).toFixed(1);
+        }, this.interval)
+    }
+    stop() {
+        clearInterval(this.sw);
+    }
+}
+
 // board[row][column]
 class Board {
 
@@ -128,10 +148,7 @@ class Board {
             }
         }
     }
-
-    openMany(row, column) {
-        if (row) {};
-    }
+    
 }
 
 /**
@@ -163,6 +180,7 @@ function addResetButton(mainDiv) {
     }
     mainDiv.appendChild(resetButton);
 }
+
 
 
 /**
@@ -210,6 +228,7 @@ function createGame(mainDiv, board) {
 
             // User clicks on a cell
             button.onclick = () => { 
+                if (button.disabled) return;
                 if (button.flagged) return;
                 
                 // After clicked: White box, disabled, color text, displays what was chosen;
@@ -299,10 +318,10 @@ function createGame(mainDiv, board) {
                     /* Middle of board */
                     else { 
                         // Cardinals
-                        if (board.board[row][column + 1] !== 'X') buttons[row * board.rows + column + 1].click();
-                        if (board.board[row][column - 1] !== 'X') buttons[row * board.rows + column - 1].click();
-                        if (board.board[row + 1][column] !== 'X') buttons[(row + 1) * board.rows + column].click();
-                        if (board.board[row - 1][column] !== 'X') buttons[(row - 1) * board.rows + column].click();
+                        if (board.board[row][column + 1] !== 'X')     buttons[row * board.rows + column + 1].click();
+                        if (board.board[row][column - 1] !== 'X')     buttons[row * board.rows + column - 1].click();
+                        if (board.board[row + 1][column] !== 'X')     buttons[(row + 1) * board.rows + column].click();
+                        if (board.board[row - 1][column] !== 'X')     buttons[(row - 1) * board.rows + column].click();
 
                         // Ordinals
                         if (board.board[row + 1][column + 1] !== 'X') buttons[(row + 1) * board.rows + column + 1].click();
@@ -311,7 +330,6 @@ function createGame(mainDiv, board) {
                         if (board.board[row - 1][column - 1] !== 'X') buttons[(row - 1) * board.rows + column - 1].click();
                     }
 
-                    //console.log((row)*(board.rows) + column + 1);
                 } 
                 
             }
@@ -346,15 +364,18 @@ function createGame(mainDiv, board) {
 
     gameInfo.innerHTML = "Mines: " + board.mines;
 
-    // Pressing 'r' resets the game
-    document.addEventListener('keypress', event => {
-        if (event.key === 'r') {
-
-        }
-    }, false)
-
 }
+
+// Easy: 10X10 10 mines
+// Medium: 15X15 25 mines
+// Hard: 20X20 60
+
 
 const board = new Board(10, 10);
 const main = document.getElementById('main');
 createGame(main, board);
+
+const stopwatch = document.getElementById('stopwatch');
+let sw = new Stopwatch(stopwatch, 10);
+sw.start();
+
