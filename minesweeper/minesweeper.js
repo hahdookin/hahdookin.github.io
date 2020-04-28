@@ -9,8 +9,10 @@ class Stopwatch {
         this.total = 0;
         this.now = Date.now();
         this.sw;
+        this.isRunning = false;
     }
     start() {
+        this.isRunning = true;
         this.sw = setInterval(() => {
             let cur = Date.now();
             this.total = (cur - this.now);
@@ -18,6 +20,7 @@ class Stopwatch {
         }, this.interval)
     }
     stop() {
+        this.isRunning = false;
         clearInterval(this.sw);
     }
 }
@@ -156,7 +159,7 @@ class Board {
  * @param {HTMLDivElement} mainDiv Main div where game is occurring
  */
 function disableAllButtons(mainDiv) {
-    let thing = mainDiv.children[0].children;
+    let thing = mainDiv.children[1].children;
     for (let i = 0; i < thing.length; i++) {
         for (let j = 0; j < thing[i].children.length; j++) {
             thing[i].children[j].disabled = true;
@@ -173,6 +176,7 @@ function addResetButton(mainDiv) {
     resetButton.innerHTML = "New Game";
     resetButton.id = 'resetButton';
     resetButton.onclick = () => {
+        mainDiv.removeChild(gameStopwatch);
         mainDiv.removeChild(gameDiv);
         mainDiv.removeChild(gameInfo);
         mainDiv.removeChild(resetButton);
@@ -194,19 +198,24 @@ function createGame(mainDiv, board) {
     // Building a board of buttons
     if (!board) board = new Board(10, 10);
     
-    // Creating a div and info para
+    // Creating a stopwatch para, div, and info para
+    let gSW = document.createElement('p');
+    gSW.id = "gameStopwatch";
+    gSW.innerHTML = "0.0"
     let gDiv = document.createElement('div');
     gDiv.id = 'gameDiv';
     let gInfo = document.createElement('p');
     gInfo.id = 'gameInfo';
 
+    mainDiv.appendChild(gSW);
     mainDiv.appendChild(gDiv);
     mainDiv.appendChild(gInfo);
 
+    const gameStopwatch = document.getElementById('gameStopwatch');
     const gameDiv = document.getElementById('gameDiv');
     const gameInfo = document.getElementById('gameInfo');
 
-    // Our board object
+    let stopwatch;
 
     for (let row = 0; row < board.rows; row++) {
         let div = document.createElement('div');
@@ -231,6 +240,9 @@ function createGame(mainDiv, board) {
                 if (button.disabled) return;
                 if (button.flagged) return;
                 
+                if (!stopwatch) stopwatch = new Stopwatch(gameStopwatch, 10);
+                if (!stopwatch.isRunning) stopwatch.start();
+
                 // After clicked: White box, disabled, color text, displays what was chosen;
                 button.style.removeProperty('color');
                 button.style.backgroundColor = "white";
@@ -239,7 +251,7 @@ function createGame(mainDiv, board) {
 
                 // If user clicked a mine, user lost
                 if (board.board[row][column] === 'X') {
-                    
+                    stopwatch.stop();
                     disableAllButtons(mainDiv);
                     gameInfo.innerHTML = "You lost!";
                     addResetButton(mainDiv);
@@ -249,7 +261,7 @@ function createGame(mainDiv, board) {
                 // Check if user won
                 if (board.board[row][column] !== 'X') board.cellsClicked++;
                 if (board.cellsClicked === board.totalCells - board.mines) {
-
+                    stopwatch.stop();
                     disableAllButtons(mainDiv);
                     gameInfo.innerHTML = "You won!";
                     addResetButton(mainDiv);
@@ -371,11 +383,8 @@ function createGame(mainDiv, board) {
 // Hard: 20X20 60
 
 
-const board = new Board(10, 10);
 const main = document.getElementById('main');
-createGame(main, board);
+createGame(main);
 
-const stopwatch = document.getElementById('stopwatch');
-let sw = new Stopwatch(stopwatch, 10);
-sw.start();
+
 
