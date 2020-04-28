@@ -139,7 +139,6 @@ class Board {
  * @param {HTMLDivElement} mainDiv Main div where game is occurring
  */
 function disableAllButtons(mainDiv) {
-
     let thing = mainDiv.children[0].children;
     for (let i = 0; i < thing.length; i++) {
         for (let j = 0; j < thing[i].children.length; j++) {
@@ -165,6 +164,7 @@ function addResetButton(mainDiv) {
     mainDiv.appendChild(resetButton);
 }
 
+
 /**
  * Constructs the playing Minesweeper playing board.
  * 
@@ -174,7 +174,7 @@ function addResetButton(mainDiv) {
  */
 function createGame(mainDiv, board) {
     // Building a board of buttons
-    if (!board) board = new Board(7,7);
+    if (!board) board = new Board(10, 10);
     
     // Creating a div and info para
     let gDiv = document.createElement('div');
@@ -207,9 +207,6 @@ function createGame(mainDiv, board) {
             button.style.fontFamily = "monospace";
             button.onmouseenter = () => { button.style.backgroundColor = "Gainsboro"; }
             button.onmouseleave = () => { button.style.backgroundColor = "lightgrey"; }
-            
-            button.value = board.board[row][column];
-
 
             // User clicks on a cell
             button.onclick = () => { 
@@ -226,19 +223,16 @@ function createGame(mainDiv, board) {
                     
                     disableAllButtons(mainDiv);
                     gameInfo.innerHTML = "You lost!";
-
                     addResetButton(mainDiv);
-                    
                     
                 } 
     
                 // Check if user won
-                board.cellsClicked++;
+                if (board.board[row][column] !== 'X') board.cellsClicked++;
                 if (board.cellsClicked === board.totalCells - board.mines) {
 
                     disableAllButtons(mainDiv);
                     gameInfo.innerHTML = "You won!";
-
                     addResetButton(mainDiv);
 
                 }
@@ -246,33 +240,82 @@ function createGame(mainDiv, board) {
                 // If user clicked a 0, open all other adjacent cells that arent a mine
                 if (board.board[row][column] === '0') {
                     button.style.color = "transparent";
-                    button.innerHTML = "&nbsp;";
-                    //console.log(gameDiv.getElementsByTagName('button'));
+                    button.innerHTML = "&nbsp;"; // No need to show that the '0' on the cell
+                    
                     let buttons = gameDiv.getElementsByTagName('button');
+
+                    /* Checking Corners */
+                    if (row === 0 && column === 0) {                                   // top left corner
+                        if (board.board[row][column + 1] !== 'X')     buttons[row * board.rows + column + 1].click();
+                        if (board.board[row + 1][column + 1] !== 'X') buttons[(row + 1) * board.rows + column + 1].click();
+                        if (board.board[row + 1][column] !== 'X')     buttons[(row + 1) * board.rows + column].click();
+                    }
+                    else if (row === 0 && column === board.columns - 1) {              // top right corner
+                        if (board.board[row][column - 1] !== 'X')     buttons[row * board.rows + column - 1].click();
+                        if (board.board[row + 1][column - 1] !== 'X') buttons[(row + 1) * board.rows + column - 1].click();
+                        if (board.board[row + 1][column] !== 'X')     buttons[(row + 1) * board.rows + column].click();
+                    }
+                    else if (row === board.rows - 1 && column === board.columns - 1) { // bottom right corner
+                        if (board.board[row - 1][column] !== 'X')     buttons[(row - 1) * board.rows + column].click();
+                        if (board.board[row - 1][column - 1] !== 'X') buttons[(row - 1) * board.rows + column - 1].click();
+                        if (board.board[row][column - 1] !== 'X')     buttons[row * board.rows + column - 1].click();
+                    }
+                    else if (row === board.rows - 1 && column === 0) {                 // bottom left corner
+                        if (board.board[row - 1][column] !== 'X')     buttons[(row - 1) * board.rows + column].click();
+                        if (board.board[row - 1][column + 1] !== 'X') buttons[(row - 1) * board.rows + column + 1].click();
+                        if (board.board[row][column + 1] !== 'X')     buttons[row * board.rows + column + 1].click();
+                    }
                     
-                    // Need to check if cell is a side/corner
-                    // Also consider removing value property on button
-                    // i.e:
-                    // if (board.board[row][column + 1].value !== 'X') buttons[row * board.rows + column + 1];
+                    /* Checking sides */
+                    else if (row === 0) {                                              // top of board
+                        if (board.board[row][column - 1] !== 'X')     buttons[row * board.rows + column - 1].click();
+                        if (board.board[row + 1][column - 1] !== 'X') buttons[(row + 1) * board.rows + column - 1].click();
+                        if (board.board[row + 1][column] !== 'X')     buttons[(row + 1) * board.rows + column].click();
+                        if (board.board[row + 1][column + 1] !== 'X') buttons[(row + 1) * board.rows + column + 1].click();
+                        if (board.board[row][column + 1] !== 'X')     buttons[row * board.rows + column + 1].click();
+                    }
+                    else if (row === board.rows - 1) {                                 // bottom of board
+                        if (board.board[row][column - 1] !== 'X')     buttons[row * board.rows + column - 1].click();
+                        if (board.board[row - 1][column - 1] !== 'X') buttons[(row - 1) * board.rows + column - 1].click();
+                        if (board.board[row - 1][column] !== 'X')     buttons[(row - 1) * board.rows + column].click();
+                        if (board.board[row - 1][column + 1] !== 'X') buttons[(row - 1) * board.rows + column + 1].click();
+                        if (board.board[row][column + 1] !== 'X')     buttons[row * board.rows + column + 1].click();
+                    }
+                    else if (column === 0) {                                           // left side of board
+                        if (board.board[row - 1][column] !== 'X')     buttons[(row - 1) * board.rows + column].click();
+                        if (board.board[row - 1][column + 1] !== 'X') buttons[(row - 1) * board.rows + column + 1].click();
+                        if (board.board[row][column + 1] !== 'X')     buttons[row * board.rows + column + 1].click();
+                        if (board.board[row + 1][column + 1] !== 'X') buttons[(row + 1) * board.rows + column + 1].click();
+                        if (board.board[row + 1][column] !== 'X')     buttons[(row + 1) * board.rows + column].click();
+                    }
+                    else if (column === board.columns - 1) {                           // right side of board
+                        if (board.board[row - 1][column] !== 'X')     buttons[(row - 1) * board.rows + column].click();
+                        if (board.board[row - 1][column - 1] !== 'X') buttons[(row - 1) * board.rows + column - 1].click();
+                        if (board.board[row][column - 1] !== 'X')     buttons[row * board.rows + column - 1].click();
+                        if (board.board[row + 1][column - 1] !== 'X') buttons[(row + 1) * board.rows + column - 1].click();
+                        if (board.board[row + 1][column] !== 'X')     buttons[(row + 1) * board.rows + column].click();
+                    }
 
-                    // Cardinals
-                    if (buttons[row * board.rows + column + 1].value !== 'X') buttons[row * board.rows + column + 1].click();
-                    if (buttons[row * board.rows + column - 1].value !== 'X') buttons[row * board.rows + column - 1].click();
-                    if (buttons[(row + 1) * board.rows + column].value !== 'X') buttons[(row + 1) * board.rows + column].click();
-                    if (buttons[(row - 1) * board.rows + column].value !== 'X') buttons[(row - 1) * board.rows + column].click();
+                    /* Middle of board */
+                    else { 
+                        // Cardinals
+                        if (board.board[row][column + 1] !== 'X') buttons[row * board.rows + column + 1].click();
+                        if (board.board[row][column - 1] !== 'X') buttons[row * board.rows + column - 1].click();
+                        if (board.board[row + 1][column] !== 'X') buttons[(row + 1) * board.rows + column].click();
+                        if (board.board[row - 1][column] !== 'X') buttons[(row - 1) * board.rows + column].click();
 
-                    // Ordinals
-                    if (buttons[(row + 1) * board.rows + column + 1].value !== 'X') buttons[(row + 1) * board.rows + column + 1].click();
-                    if (buttons[(row + 1) * board.rows + column - 1].value !== 'X') buttons[(row + 1) * board.rows + column - 1].click();
-                    if (buttons[(row - 1) * board.rows + column + 1].value !== 'X') buttons[(row - 1) * board.rows + column + 1].click();
-                    if (buttons[(row - 1) * board.rows + column - 1].value !== 'X') buttons[(row - 1) * board.rows + column - 1].click();
-                    
+                        // Ordinals
+                        if (board.board[row + 1][column + 1] !== 'X') buttons[(row + 1) * board.rows + column + 1].click();
+                        if (board.board[row + 1][column - 1] !== 'X') buttons[(row + 1) * board.rows + column - 1].click();
+                        if (board.board[row - 1][column + 1] !== 'X') buttons[(row - 1) * board.rows + column + 1].click();
+                        if (board.board[row - 1][column - 1] !== 'X') buttons[(row - 1) * board.rows + column - 1].click();
+                    }
 
-                    console.log((row)*(board.rows) + column + 1);
+                    //console.log((row)*(board.rows) + column + 1);
                 } 
-    
+                
             }
-    
+            
             // Empty -> F -> ? -> Empty
             button.onauxclick = () => {
                 if (button.flagged) { // Sets Question Mark
@@ -296,7 +339,8 @@ function createGame(mainDiv, board) {
             button.addEventListener('contextmenu', event => { event.preventDefault(); }, false);
     
             div.appendChild(button);
-            
+        
+
         }
     }
 
@@ -311,6 +355,6 @@ function createGame(mainDiv, board) {
 
 }
 
-const board = new Board(7, 7);
+const board = new Board(10, 10);
 const main = document.getElementById('main');
 createGame(main, board);
