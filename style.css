@@ -73,6 +73,16 @@ a:hover {
 .fa-keyboard { /* terminal icon in logo */
   color: #222;
 }
+.navbar-brand:hover > .fa-keyboard {
+  animation-name: spin;
+  animation-duration: .7s;
+}
+@keyframes spin {
+  from {}
+  to {
+    transform: rotate(360deg);
+  }
+}
 .logo {
   font-weight:500;
   font-size: 200%;
@@ -243,6 +253,34 @@ hr.light-100 {
   .social a {
     font-size: 2em;
     padding: .7rem;
+  }
+}
+@media (max-width: 298px) {
+  .carousel-caption {
+    top: 40%;
+  }
+  .carousel-caption h1 {
+    font-size: 250%;
+  }
+  .carousel-caption h3 {
+    font-size: 110%;
+  }
+  .carousel-caption .btn {
+    font-size: 90%;
+    padding: 4px 8px;
+  }
+  .carousel-indicators {
+    display: none;
+  }
+  .display-4 {
+    font-size: 200%;
+  }
+  .social a {
+    font-size: 2em;
+    padding: .7rem;
+  }
+  #gameDiv button {
+    font-size: 80%;
   }
 }
 
