@@ -9,10 +9,10 @@ let scrollComplete = {
     "projectsHeader": false
 };
 
-projectsButton.onclick = (event => {
+projectsButton.onclick = () => {
     if (scrollComplete["projectsHeader"]) return;
     Utils.ssWriteText(projectsHeader);
     scrollComplete["projectsHeader"] = true;
-});
+};
 
 Utils.writeText(carouselName);

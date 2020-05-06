@@ -9,6 +9,18 @@ export function getRandomInt(max) {
 }
 
 /**
+ * Returns random HEX number for color.
+ */
+export function getRandomColor() {
+    const chars = "0123456789ABCDEF";
+    let res = "#";
+    for (let i = 0; i < 6; ++i) {
+        res += chars[getRandomInt(16)];
+    }
+    return res;
+}
+
+/**
  * Checks if number is in between range.
  * @param {Number} x    Number to check
  * @param {Number} min  Lower bound

@@ -1,3 +1,10 @@
+// TODO:
+// - Add pausing to stopwatch
+//      - Trigger pausing on modal closing
+// - Get rid of mines count
+//      - Replace with amount of flags left dynamically
+// - Add difficulty levels
+
 'use strict'
 
 import * as Utils from '../utils.js';
@@ -42,6 +49,7 @@ class Board {
         this.totalCells = rows * columns;
         this.rows = rows;
         this.columns = columns;
+        this.flags = mines;
 
         if (mines > this.totalCells) mines = this.totalCells;
         this.mines = mines;
@@ -155,7 +163,7 @@ class Board {
 }
 
 /**
- * 
+ * Sets disabled property to true on all button elements in the game div.
  * @param {HTMLDivElement} mainDiv Main div where game is occurring
  */
 function disableAllButtons(mainDiv) {
@@ -380,7 +388,7 @@ function createGame(mainDiv, board) {
 
 // Easy: 10X10 10 mines
 // Medium: 15X15 25 mines
-// Hard: 20X20 60
+// Hard: 20X20 60 mines
 
 
 const main = document.getElementById('main');
