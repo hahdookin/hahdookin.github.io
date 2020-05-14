@@ -7,7 +7,7 @@
     <script defer type="module" src="admin.js"></script>
 </head>
 <body>
-    <form action="">
+    <form action="" id="inputForm">
         <label for="singles">1's</label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input min="0" value="0" type="number" name="singles" id="singles"><br>
         <label for="fives">5's</label>&nbsp;&nbsp;&nbsp;&nbsp;        <input min="0" value="0" type="number" name="fives" id="fives"><br>
         <label for="tens">10's</label>&nbsp;&nbsp;                    <input min="0" value="0" type="number" name="tens" id="tens"><br>
@@ -22,5 +22,9 @@
     <p id="total">0</p>
     <button id="save">Save</button>
     <button id="load">Load</button>
+    <button id="reset">Reset</button>
+    <button id="resetCache">Reset Cache</button>
+    <br>
+    <p id="lastSave"></p>
 </body>
 </html>
