@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Composition over Inheritance</title>
+  </head>
+  <body>
+    <h1>Composition over Inheritance</h1>
+    <h3>By Christopher Pane</h3>
+    <p>Composition and inheritance are two forms of code reuse that enable polymorphic behavior. Inheritance achieves polymorphic behavior by having classes <i>inherit</i> data and behavior from some parent class. Composition achieves polymorphic behavior by <i>composing</i> objects with other objects that contain the desired behavior/data.</p>
+    <p>The following code example shows how inheritance can be used to achieve polymorphism:</p>
+    <code><pre>
+/* The base object that will 
+   allow polymorphic behavior */
+class Object {
+public:
+    virtual void move() {}
+    virtual void draw() {}
+}
+
+class Visible : public Object {
+public:
+    Model model;
+    virtual void draw() override {
+        // Render the model...
+    }
+}
+
+class Movable : public Object {
+public:
+    virtual void move() override {
+        // Update the position...
+    }
+}
+    </pre></code> 
+    <p>Once these base classes are created, classes can be created such as:</p>
+    <ul>
+      <li><code>class Player : public Visible, public Movable</code></li>
+      <li><code>class Building : public Visible</code></li>
+      <li><code>class InvisibleWall : public Object</code></li>
+    </ul>
+    <p>and so on and so forth as the base object grows in virtual functionality.</p>
+    <p>However, this introduces a problem when the follwing methods are implemented for <code>Object</code>'s base classes:</p>
+    <code><pre>
+void Visible::update() {
+    // Update the keyframe of the model animation...
+}
+
+void Movable::update() {
+    // Update the velocity/acceleration...
+}
+    </pre></code>
+    <p>Now, when <code>Player</code> inherits from <code>Visible</code> and <code>Movable</code>, which implementation of <code>update</code> will be inherited?</p>
+    <p>This situtation is called the <a href="https://en.wikipedia.org/wiki/Multiple_inheritance#The_diamond_problem">Diamond Problem</a> and is a core problem with multiple inheritance. Multiple inheritance is a dangerous feature that can very easily be used incorrectly.</p>
+    <p>The next code example will show how composition can be used to achieve polymorphism:</p>
+    <code><pre>
+/* Base object to enable
+   polymorphism for visibility */
+class VisibilityComponent {
+public:
+    virtual void draw() = 0;
+}
+
+class Visible : public VisibilityComponent {
+public:
+    virtual void draw() override {
+        // Render the model...
+    }
+}
+
+class Invisible : public VisibilityComponent {
+public:
+    virtual void draw() override {}
+}
+
+/* Base object to enable
+   polymorphism for movement */
+class MovementComponent {
+public:
+    virtual void draw() = 0;
+}
+
+class Movable : public MovementComponent {
+public:
+    virtual void move() override {
+        // Update the position...
+    }
+}
+
+class Immovable : public MovementComponent {
+public:
+    virtual void move() override {}
+}
+
+/* The base object that will 
+   allow polymorphic behavior */
+class Object {
+    VisibilityComponent *v;
+    MovementComponent *m;
+public:
+    Object(VisibilityComponent *vc, MovementComponent *mc)
+    virtual void move() {
+        m->move();
+    }
+    virtual void draw() {
+        v->draw();
+    }
+}
+    </pre></code>
+    <p>With this structure, class can be easily created as compositions over their elements:</p>
+    <code><pre>
+class Player : public Object {
+public:
+    Player()
+        : Object(new Visible(), new Movable())
+        {}
+}
+
+class Building : public Object {
+public:
+    Building()
+        : Object(new Visible(), new Movable())
+        {}
+}
+    </pre></code>
+    <p>The flexibility of this design allows the programmer to think of objects as what they are made up, rather than what they share in common with other existing objects.</p>
+    <p>Additionally, the Diamond Problem can be solved by adding the following to <code>Object</code>'s methods:</p>
+    <code><pre>
+void Object::move() {
+    m->update();
+    m->move();
+}
+
+void Object::draw() {
+    v->update();
+    v->move();
+}
+    </pre></code>
+    <p>Now, the <code>update()</code> method is being called explicitly on each component, removing the confusion of multiple inheritance.</p>
+    <p>In conclusion, composition is a software architecture that provides more flexibility as programs grow in size and objects become increasingly more complex. Although it takes slightly more boilerplate to implement, the benefits down the road in development will show that it is worth it.</p>
+  </body>
+</html>
