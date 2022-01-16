@@ -1,0 +1,146 @@
+
+body {
+    background-color: #1d1f21;
+    color: #c5c8c6;
+    font-family: 'Fira Mono', monospace;
+    font-size: 18px;
+    margin: 0;
+    overflow-x: hidden;
+}
+
+body .stream { 
+    margin-top: 8px; 
+}
+
+body .line {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: row;
+    margin: 0 4px;
+    padding-top: 2px;
+    width: calc(100% - 12px);
+}
+
+body .line p {
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+}
+
+body .line a {
+    color: #c5c8c6;
+}
+body .line a:link {
+    color: #c5c8c6;
+}
+body .line a:visited {
+    color: #c5c8c6;
+}
+body .line a:hover {
+    background-color: #3971ed;
+}
+body .line a:active {
+    /* color: red; */
+}
+
+body .line .location {
+    max-width: 90px;
+    min-width: 90px;
+    text-align: right;
+    padding-right: 6px;
+}
+
+body .editline {
+    background-color: #222222;
+    padding: 2px 4px 0px 4px;
+    width: calc(100%);
+    margin: 0;
+    margin-bottom: 0;
+}
+
+body .editline .edit-section {
+    min-width: calc(100% - 200px);
+    position: relative;
+}
+
+body .editline .edit-section .edit {
+    position: absolute;
+    min-width: calc(100%);
+    -webkit-text-fill-color: transparent;
+    outline: none;
+}
+body .editline .edit-section .edit-highlighted {
+    position: absolute;
+    height: 100%;
+    min-width: calc(100%);
+    /* z-index: -10; */
+    color: #c5c8c6;
+    user-select: none;
+}
+
+body .editline .time {
+    user-select: none;
+    cursor: default;
+}
+
+body .normal {
+    color: #3971ed;
+}
+
+body .error {
+    color: #cc342b;
+}
+
+body .loccolor {
+    color: #198844;
+}
+
+.keyword {
+    font-weight: bold;
+    color: #C586C0;
+}
+.number {
+    color: #B5CEA8;
+}
+.string {
+    color: #CE9178;
+}
+.function {
+    font-weight: bold;
+    color: #DCDCAA;
+}
+.type { 
+    color: #4EC9B0;
+}
+.normaltext {
+    color: #C5C8C6;
+}
+.comment {
+    color: #6A9955;
+}
+
+.DUMMY {
+/*
+let s:cdGray = {'gui': '#808080', 'cterm': s:cterm04, 'cterm256': '08'}
+let s:cdViolet = {'gui': '#646695', 'cterm': s:cterm04, 'cterm256': '60'}
+let s:cdBlue = {'gui': '#569CD6', 'cterm': s:cterm0D, 'cterm256': '75'}
+let s:cdDarkBlue = {'gui': '#223E55', 'cterm': s:cterm0D, 'cterm256': '73'}
+"let s:cdLightBlue = {'gui': '#9CDCFE', 'cterm': s:cterm0C, 'cterm256': '117'}
+let s:cdLightBlue = {'gui': '#9CDCFE', 'cterm': s:cterm0C, 'cterm256': '152'}
+if g:codedark_conservative | let s:cdLightBlue = s:cdFront | endif
+let s:cdGreen = {'gui': '#6A9955', 'cterm': s:cterm0B, 'cterm256': '65'}
+let s:cdBlueGreen = {'gui': '#4EC9B0', 'cterm': s:cterm0F, 'cterm256': '43'}
+let s:cdLightGreen = {'gui': '#B5CEA8', 'cterm': s:cterm09, 'cterm256': '151'}
+let s:cdRed = {'gui': '#F44747', 'cterm': s:cterm08, 'cterm256': '203'}
+let s:cdOrange = {'gui': '#CE9178', 'cterm': s:cterm0F, 'cterm256': '173'}
+let s:cdLightRed = {'gui': '#D16969', 'cterm': s:cterm08, 'cterm256': '167'}
+if g:codedark_conservative | let s:cdLightRed = s:cdOrange | endif
+let s:cdYellowOrange = {'gui': '#D7BA7D', 'cterm': s:cterm0A, 'cterm256': '179'}
+"let s:cdYellow = {'gui': '#DCDCAA', 'cterm': s:cterm0A, 'cterm256': '187'}
+let s:cdYellow = {'gui': '#DCDCAA', 'cterm': s:cterm0A, 'cterm256': '229'}
+if g:codedark_conservative | let s:cdYellow = s:cdFront | endif
+let s:cdPink = {'gui': '#C586C0', 'cterm': s:cterm0E, 'cterm256': '176'}
+if g:codedark_conservative | let s:cdPink = s:cdBlue | endif
+ */
+}
