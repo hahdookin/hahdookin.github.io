@@ -1,0 +1,72 @@
+//=======================
+// Expressions
+//=======================
+Expr         -> OrExpr | AssignExpr
+AssignExpr   -> VariableRef =   OrExpr
+              | VariableRef +=  OrExpr
+              | VariableRef -=  OrExpr
+              | VariableRef *=  OrExpr
+              | VariableRef **= OrExpr
+              | VariableRef /=  OrExpr
+              | VariableRef %=  OrExpr
+              | VariableRef <<= OrExpr
+              | VariableRef >>= OrExpr
+              | VariableRef &=  OrExpr
+              | VariableRef ^=  OrExpr
+              | VariableRef |=  OrExpr
+              | VariableRef &&= OrExpr
+              | VariableRef ||= OrExpr
+              | VariableRef ~=  OrExpr
+OrExpr       -> AndExpr {|| AndExpr}*
+AndExpr      -> BWOrExpr {&& BWOrExpr}*
+BWOrExpr     -> BWXorExpr {| BWXorExpr}*
+BWXorExpr    -> BWAndExpr {^ BWAndExpr}*
+BWAndExpr    -> EqualExpr {& EqualExpr}*
+EqualExpr    -> CompExpr {(== | !=) CompExpr}*
+CompExpr     -> ShiftExpr {(< | <= | > | >=) ShiftExpr}*
+ShiftExpr    -> AddExpr {(<< | >>) AddExpr}*
+AddExpr      -> Term {(+ | -) Term}*
+Term         -> PowFactor {(* | / | %) PowFactor}*
+PowFactor    -> SFactor ** SFactor
+SFactor      -> (+ | - | ! | ~) AccessFactor
+AccessFactor -> Factor { ( ( ArgList ) | [ Expr ] | . ident ) }*
+Factor       -> number
+              | string
+              | Array
+              | Object
+              | FunctionCall
+              | ( Expr )
+              | VariableRef
+
+Array        -> [ {Expr {, Expr}} ]
+Object       -> { string : OrExpr{, ObjectKey : OrExpr}* }
+ObjectKey    -> number | string
+FunctionCall -> ident ( ArgList )
+ArgList      -> Empty | Expr{, Expr}*
+VariableRef  -> ident
+              | ident { [ Expr ] }*
+              | ident { . ident }*
+
+//=======================
+// Statements
+//=======================
+Stmts        -> empty
+              | Stmt Stmts
+Stmt         -> Expr ;
+              | ;
+              | LetStmt ;
+              | FunctionDef
+              | EnumDef
+              | Block
+              | IfStmt
+              | WhileStmt
+Block        -> Stmt
+              | { Stmts }
+LetStmt      -> (let | final) Ident = Expr
+IfStmt       -> if Expr Block {else (IfStmt)}
+WhileStmt    -> while Expr Block
+
+FunctionDef  -> fn ident ( ParamList ) Block
+ParamList    -> Empty | ident{, ident}*
+EnumDef      -> enum { EnumList }
+EnumList     -> EnumList -> Empty | ident {= OrExpr}{, EnumList}

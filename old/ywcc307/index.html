@@ -107,7 +107,7 @@ public:
     }
 }
     </pre></code>
-    <p>With this structure, class can be easily created as compositions over their elements:</p>
+    <p>With this structure, classes can be easily created as compositions over their elements:</p>
     <code><pre>
 class Player : public Object {
 public:
@@ -119,11 +119,11 @@ public:
 class Building : public Object {
 public:
     Building()
-        : Object(new Visible(), new Movable())
+        : Object(new Visible(), new Immovable())
         {}
 }
     </pre></code>
-    <p>The flexibility of this design allows the programmer to think of objects as what they are made up, rather than what they share in common with other existing objects.</p>
+    <p>The flexibility of this design allows the programmer to think of objects as what they are made up of, rather than what they share in common with other existing objects.</p>
     <p>Additionally, the Diamond Problem can be solved by adding the following to <code>Object</code>'s methods:</p>
     <code><pre>
 void Object::move() {
@@ -133,7 +133,7 @@ void Object::move() {
 
 void Object::draw() {
     v->update();
-    v->move();
+    v->draw();
 }
     </pre></code>
     <p>Now, the <code>update()</code> method is being called explicitly on each component, removing the confusion of multiple inheritance.</p>

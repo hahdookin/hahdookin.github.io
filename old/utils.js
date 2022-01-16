@@ -45,9 +45,10 @@ export function sleep(ms) {
  */
 export async function flicker(ele, time=500) {
     let content = ele.innerHTML;
-    if (content[content.length - 1] === '_') content = content.substr(0 , content.length - 1);
+    if (content[content.length - 1] === '_')
+        content = content.substr(0 , content.length - 1);
     while (true) {
-        ele.innerHTML = content + "&#8199;";
+        ele.innerHTML = content + "&#10240;";
         await sleep(time);
         ele.innerHTML = content + "_";
         await sleep(time);
@@ -60,17 +61,27 @@ export async function flicker(ele, time=500) {
  * @param {Number}  time   Interval between writing text (ms)
  */
 export async function writeText(ele, time=100) {
-    let content = ele.innerHTML;
+    const content = ele.innerHTML;
     ele.innerHTML = "";
-    let temp = "&#8199;"; // Blank space same size as underscore
-    for (let i = 0; i < content.length; i++) {
-        temp += content[i];
+    let temp = "&#10240;"; // Blank space same size as underscore
+    for (let char of content) {
+        temp += char;
         ele.innerHTML = temp + '_';
         await sleep(time);
     }
     await flicker(ele);
 }
-
+// export async function writeText(ele, time=100) {
+//     const content = ele.innerHTML;
+//     ele.innerHTML = "&#10240;".repeat(content.length);
+//     let temp = "";
+//     for (let [i, char] of [...content].entries()) {
+//         temp += char;
+//         ele.innerHTML = temp + "&#10240;".repeat(content.length - i - 1) + '_';
+//         await sleep(time);
+//     }
+//     await flicker(ele);
+// }
 /**
  * Waits a bit for smooth scroll to finish then writes text.
  * @param {Element} ele    Element to write text
