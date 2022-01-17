@@ -11,12 +11,10 @@ export function interpret(line) {
 
 const ss = new StringStream(
     `
-    let msgs = ["hello", "There"];
-    for msg in msgs {
-        msg = toupper(msg);
-        print(msg);
-    }
-    print(msgs);
+    # test(fn, arg)
+    fn f(x) { return x >= 0; }
+    final arr = filter([-2, -1, 0, 1, 2], f);
+    print(arr);
 
     #fn pos(n) { return n >= 0; }
     #forEach(map(filter(a, pos), sqrt), printf);
