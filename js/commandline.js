@@ -273,6 +273,7 @@ function docs(fn) {
             print(Value.fromString(`${tab}${name} : ${type}`), true);
         });
 
+    // Print returns
     print(Value.fromString('<span class="keyword">Returns</span>:'), true);
     if (Object.keys(fn_docs.returns).length === 0) {
         print(Value.fromString(`${tab}none`), true);
@@ -283,6 +284,13 @@ function docs(fn) {
             '<span class="type">$1</span>'
         );
         print(Value.fromString(`${tab}${return_type} : ${return_desc}`), true);
+    }
+
+    // Print examples if they exist
+    if (fn_docs.example !== undefined) {
+        print(Value.fromString('<span class="keyword">Example</span>:'), true);
+        for (const msg of fn_docs.example)
+            print(Value.fromString(`${tab}${highlight(msg)}`), true);
     }
 }
 add("docs", ["fn"], docs, false);
@@ -319,21 +327,24 @@ intrinsic_docs["goto"] = {
 };
 intrinsic_docs["cd"] = intrinsic_docs["goto"];
 function goto(loc) {
-    if (loc.Stemp === "<page>") {
+    const loc_str = loc.Stemp.toLowerCase();
+    if (loc_str === "<page>") {
         print(Value.fromString(`Enter ${highlight("ls();")} and pass in the page you want to go to.`), true);
         print(Value.fromString(`Ex: ${highlight('goto("contact")')};`), true);
         return;
     }
-    if (loc.Stemp === null) {
+    if (loc_str === null) {
         print(Value.fromString("Expected a string."));
         print(Value.fromString(`Ex: ${highlight('goto("contact")')};`), true);
         return;
     }
-    if (!Object.keys(locations).includes(loc.Stemp)) {
-        print(Value.fromString(`${loc.Stemp} doesn't exist`));
+    if (!Object.keys(locations).includes(loc_str)) {
+        print(Value.fromString(`${loc_str} doesn't exist`));
+        print(Value.fromString(`Enter ${highlight("ls();")} and pass in the page you want to go to.`), true);
+        print(Value.fromString(`Ex: ${highlight('goto("contact")')};`), true);
         return;
     }
-    cur_loc = loc.Stemp;
+    cur_loc = loc_str;
     for (const msg of locations[cur_loc])
         print(Value.fromString(msg), true, cur_loc);
 }

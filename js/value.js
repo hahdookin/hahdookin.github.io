@@ -191,7 +191,7 @@ export class Value {
         }
         return false;
     }
-    enumerable() {
+    iterable() {
         switch (this.vt) {
             case ValType.String:
             case ValType.Array:
