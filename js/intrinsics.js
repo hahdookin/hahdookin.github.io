@@ -1,5 +1,14 @@
 import { Value, ValType } from "./value.js";
 
+import {
+    symbolTable,
+    fnState,
+    Stmts
+} from "./parser.js";
+function zip(a1, a2) {
+    return a1.map((e, i) => [e, a2[i]]);
+}
+
 //===========================
 // Intrinsic Functions
 //===========================
@@ -581,6 +590,72 @@ function toupper(str) {
     return Value.fromString(str.Stemp.toUpperCase());
 }
 add("toupper", ["str"], toupper, true);
+
+// fn: FunctionValue, args: Value[]
+function call(fn, args) {
+    let value = new Value();
+    if (fn.isIntrinsic()) {
+        let res = fn.Ftemp.fn(...args);
+        if (fn.Ftemp.returns) {
+            return res;
+        } else {
+            return Value.fromNumber(1);
+        }
+    }
+
+    const subroutine = fn.toTokenStream();
+    const arg_zip = zip(args, fn.Ftemp.params);
+
+    let nested = false;
+    symbolTable.addScope();
+    for (let [arg, param] of arg_zip)
+        symbolTable.add(param, arg);
+    if (fnState.in_function)
+        nested = true;
+    fnState.in_function = true;
+    status = Stmts(subroutine);
+    if (!nested)
+        fnState.in_function = false;
+    symbolTable.popScope();
+
+    if (fnState.fn_returning)
+        value.setFromValue(fnState.return_stack.pop());
+    else
+        value.setNumber(1);
+    fnState.fn_returning = false;
+    return value;
+}
+
+intrinsic_docs["filter"] = {
+    desc: [
+        "Creates an array based on another filtered",
+        "by a predicate."
+    ],
+    params: [
+        { name: "arr", type: "Array" },
+        { name: "f",  type: "Function" }
+    ],
+    returns: {
+        type: "Array",
+        desc: "arr with all elements where f(arr[i]) is true"
+    },
+    example: [
+        "fn positive(x) { return x >= 0; }",
+        "let arr = [-1, 0, 1];",
+        "print(arr); # [0, 1]"
+    ]
+}
+function filter(arr, f) {
+    let value = new Value();
+    value.setArray([]);
+    for (const val of arr.Atemp) {
+        let retval = call(f, [val]);
+        if (retval.Ntemp)
+            value.addArrayValue(val);
+    }
+    return value;
+}
+add("filter", ["arr", "f"], filter, true);
 
 //===========================
 // Math library
