@@ -11,7 +11,12 @@ export function interpret(line) {
 
 const ss = new StringStream(
     `
-    enum { a, b, a };
+    let msgs = ["hello", "There"];
+    for msg in msgs {
+        msg = toupper(msg);
+        print(msg);
+    }
+    print(msgs);
 
     #fn pos(n) { return n >= 0; }
     #forEach(map(filter(a, pos), sqrt), printf);

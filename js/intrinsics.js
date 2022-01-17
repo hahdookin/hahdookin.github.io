@@ -18,6 +18,7 @@ export const intrinsic_fns = {};
 //      type: String,
 //      desc: String[],
 //   }
+//   example: String[] | undefined
 // }
 export const intrinsic_docs = {};
 export function add(name, args, fn, returns) {
@@ -40,7 +41,12 @@ intrinsic_docs["isnumber"] = {
     returns: {
         type: "Number",
         desc: "1 if number, 0 otherwise"
-    }
+    },
+    example: [
+        "isnumber(1); # true",
+        "isnumber(0xDEADBEEF); # true",
+        "isnumber(0b1011); # true",
+    ]
 };
 function isnumber(value) {
     return Value.fromNumber(+(value.isNumber()));
@@ -58,6 +64,9 @@ intrinsic_docs["isstring"] = {
         type: "Number",
         desc: "1 if string, 0 otherwise"
     },
+    example: [
+        'isstring("apple"); # true',
+    ]
 };
 function isstring(value) {
     return Value.fromNumber(+(value.isString()));
@@ -75,6 +84,9 @@ intrinsic_docs["isarray"] = {
         type: "Number",
         desc: "1 if array, 0 otherwise"
     },
+    example: [
+        "isarray([]); # true",
+    ]
 };
 function isarray(value) {
     return Value.fromNumber(+(value.isArray()));
@@ -92,6 +104,9 @@ intrinsic_docs["isobject"] = {
         type: "Number",
         desc: "1 if object, 0 otherwise"
     },
+    example: [
+        "isobject({}); # true",
+    ]
 };
 function isobject(value) {
     return Value.fromNumber(+(value.isObject()));
@@ -109,6 +124,10 @@ intrinsic_docs["isfunction"] = {
         type: "Number",
         desc: "1 if function, 0 otherwise"
     },
+    example: [
+        "isfunction(fn(){}); # true",
+        "isfunction(print); # true",
+    ]
 };
 function isfunction(value) {
     return Value.fromNumber(+(value.isFunction()));
@@ -129,6 +148,11 @@ intrinsic_docs["push"] = {
         { name: "val", type: "Any" },
     ],
     returns: {},
+    example: [
+        "let arr = []",
+        "push(arr, 42);",
+        "print(arr); # [42]"
+    ]
 };
 function push(arr, val) {
     arr.addArrayValue(val);
@@ -147,6 +171,11 @@ intrinsic_docs["pop"] = {
         type: "Any",
         desc: "Value popped"
     },
+    example: [
+        "let arr = [1, 2, 3];",
+        "print(pop(arr)); # 3",
+        "print(arr); # [1, 2]"
+    ]
 };
 function pop(arr) {
     return arr.Atemp.pop();
@@ -165,6 +194,11 @@ intrinsic_docs["dequeue"] = {
         type: "Any",
         desc: "Value dequeued"
     },
+    example: [
+        "let arr = [1, 2, 3];",
+        "print(dequeue(arr)); # 1",
+        "print(arr); # [2, 3]"
+    ]
 };
 function dequeue(arr) {
     return arr.Atemp.shift();
@@ -182,6 +216,9 @@ intrinsic_docs["len"] = {
         type: "Number",
         desc: "Amount of items in list"
     },
+    example: [
+        'len("abc") == len([1, 2, 3]); # true'
+    ]
 };
 function len(list) {
     let val = new Value();
@@ -209,6 +246,9 @@ intrinsic_docs["concat"] = {
         type: "String",
         desc: "Concatenation of s1 and s2"
     },
+    example: [
+        'streq(concat("a", "b"), "ab"); # true'
+    ]
 };
 function concat(s1, s2) {
     let val = new Value();
@@ -221,6 +261,25 @@ function concat(s1, s2) {
     return val;
 }
 add("concat", ["s1", "s2"], concat, true);
+
+intrinsic_docs["zip"] = {
+    desc: [
+        "Zips two arrays together into a new one."
+    ],
+    params: [
+        { name: "a1", type: "Array" },
+        { name: "a2", type: "Array" },
+    ],
+    returns: {
+        type: "Array [Array]",
+        desc: "index 0 contains [a1[0], a2[0]], and so on"
+    },
+    example: [
+        'final a = zip([1, 2], ["a", "b"]);',
+        'print(a[0]); # [1, "a"]',
+        'print(a[1]); # [2, "b"]'
+    ]
+}
 
 intrinsic_docs["deepcopy"] = {
     desc: [
@@ -283,6 +342,9 @@ intrinsic_docs["keys"] = {
         type: "Array [String]",
         desc: "Array with all keys in the obj."
     },
+    example: [
+        'keys({a: 1, b: 2}); # ["a", "b"]'
+    ]
 };
 function keys(obj) {
     let res = Value.fromArray([]);
@@ -304,6 +366,9 @@ intrinsic_docs["values"] = {
         type: "Array",
         desc: "Array with all values in the obj."
     },
+    example: [
+        'values({a: 1, b: 2}); # [1, 2]'
+    ]
 };
 function values(obj) {
     let res = Value.fromArray([]);
@@ -325,6 +390,10 @@ intrinsic_docs["entries"] = {
         type: "Array [Object {key: String, value: Any}]",
         desc: "Array of objects of key/value pairs.",
     },
+    example: [
+        "let obj = entries({A: 5, B: 6});",
+        'print(obj[0]); # { key: "A", value: 5 }'
+    ]
 };
 function entries(obj) {
     let res = Value.fromArray([]);
@@ -352,8 +421,7 @@ intrinsic_docs["print"] = {
     ],
     returns: {},
 };
-// TODO: Figure out variardic args and remove print keyword
-// TODO: This takes an Array, make it variardic
+// TODO: This takes a single argument, make it variardic
 function print(args) {
     console.log(args.printFmt());
 }
@@ -390,6 +458,9 @@ intrinsic_docs["repeat"] = {
         type: "String",
         desc: "str concated with itself n times"
     },
+    example: [
+        'repeat("AB", 3); # "ABABAB"'
+    ]
 };
 function repeat(str, n) {
     return Value.fromString(str.Stemp.repeat(n.Ntemp));
@@ -408,7 +479,10 @@ intrinsic_docs["substring"] = {
     returns: {
         type: "String",
         desc: "substring of str of [start, end)"
-    }
+    },
+    example: [
+        'substring("apple", 1, 4); # "ppl"',
+    ]
 };
 function substring(str, start, end) {
     return Value.fromString(
@@ -429,6 +503,10 @@ intrinsic_docs["strcmp"] = {
         type: "Number",
         desc: "C style string comparison"
     },
+    example: [
+        'let cmp = strcmp("aa", "ab");',
+        'print(cmp); # -1, "aa" is less than "ab"'
+    ]
 };
 function strcmp(s1, s2) {
     let n = 0;
@@ -454,6 +532,10 @@ intrinsic_docs["streq"] = {
         type: "Number",
         desc: "1 if strings are equal, 0 otherwise"
     },
+    example: [
+        'streq("Hello", "Hello"); # true',
+        'streq("Hello", "Goodbye"); # false'
+    ]
 };
 function streq(s1, s2) {
     return Value.fromNumber(+(s1.Stemp === s2.Stemp));
@@ -471,6 +553,9 @@ intrinsic_docs["tolower"] = {
         type: "String",
         desc: "str with all uppercase letter as lowercase"
     },
+    example: [
+        'tolower("CHRIS"); # "chris"'
+    ]
 };
 function tolower(str) {
     return Value.fromString(str.Stemp.toLowerCase());
@@ -488,6 +573,9 @@ intrinsic_docs["toupper"] = {
         type: "String",
         desc: "str with all lowercase letter as uppercase"
     },
+    example: [
+        'toupper("apple"); # "APPLE"'
+    ]
 };
 function toupper(str) {
     return Value.fromString(str.Stemp.toUpperCase());

@@ -155,6 +155,7 @@ export function Stmt(stream) {
 
         case TokenType.FOR:
             status = ForStmt(stream);
+            from_block = true;
             break;
 
         case TokenType.WHILE:
@@ -260,14 +261,59 @@ export function Block(stream) {
 }
 
 // Starts with the assumption a 'for' has already been read.
+// for ident in iterable Block
 export function ForStmt(stream) {
     let token = stream.next();
+    if (token.tt !== TokenType.Ident)
+        return parse_error("Missing ident in for stmt");
+    const loop_ident = token.lexeme;
+    token = stream.next();
+    if (token.tt !== TokenType.IN)
+        return parse_error("Missing 'in' in for stmt");
+    let iter_value = new Value();
+    let status = Expr(stream, iter_value);
+    if (!status)
+        return false;
+    if (!iter_value.iterable())
+        return parse_error(`Type ${iter_value.typeStr()} not iterable`);
+    token = stream.next();
+    if (token.tt !== TokenType.LBRACE)
+        return parse_error("Missing '{' in for stmt")
+
+    // Save tokens for the body
+    let lbrace_count = 0;
+    token = stream.next();
+    let body_tokens = [];
+    while (token.tt !== TokenType.END) {
+        if (token.tt === TokenType.RBRACE) {
+            if (lbrace_count === 0)
+                break;
+            lbrace_count--;
+        }
+        if (token.tt === TokenType.LBRACE)
+            lbrace_count++;
+        body_tokens.push(token.lexeme);
+        token = stream.next();
+    }
+    stream.pushback(token);
+    const body = new TokenStream(new StringStream(body_tokens.join(' ')));
+    symbolTable.addScope();
+    for (const val of iter_value.Atemp) {
+        symbolTable.add(loop_ident, Value.from(val));
+        symbolTable.addScope();
+        body.reset();
+        status = Stmts(body);
+        symbolTable.popScope();
+        if (!status)
+            return parse_error("Error in for body");
+    }
+    symbolTable.popScope();
+    return true;
 }
 
-// Starts with the assumption a 'for' has already been read.
+// Starts with the assumption a 'while' has already been read.
 // WhileStmt -> while Expr Block
 export function WhileStmt(stream) {
-    // debugger;
     // Save tokens for the conditional
     let token = stream.next();
     let expr_tokens = [];
@@ -657,7 +703,8 @@ export function Expr(stream, retval) {
     if (token.tt === TokenType.Ident) {
         // debugger
         let tokens_read = [token];
-        let delims = 0;
+        let delims_count = 0;
+        let delims = { '(': 0, '[': 0, '{': 0 };
         token = stream.next();
         tokens_read.push(token);
         while (
@@ -667,26 +714,38 @@ export function Expr(stream, retval) {
         ) {
             // Only stop at an assign token if
             // we are within the correct grouping
-            if (isAssignOp(token.tt) && delims === 0)
-                    break;
-            if (isOpeningDelim(token.tt))
-                delims++;
-            if (isClosingDelim(token.tt))
-                delims--;
+            if (
+                delims['('] === 0 &&
+                delims['['] === 0 &&
+                delims['{'] === 0 &&
+                isAssignOp(token.tt)
+            ) break;
+            if      (token.lexeme === '(') delims['(']++
+            else if (token.lexeme === '[') delims['[']++
+            else if (token.lexeme === '{') delims['{']++
+            else if (token.lexeme === ')') delims['(']--
+            else if (token.lexeme === ']') delims['[']--
+            else if (token.lexeme === '}') delims['{']--
             token = stream.next();
             tokens_read.push(token);
         }
-        if (delims === 0 && isAssignOp(token.tt)) {
+
+        // Put back the tokens we used to check
+        // what kind of statement this is
+        for (let t of tokens_read.reverse())
+            stream.pushback(t);
+        if (
+            delims['('] === 0 &&
+            delims['['] === 0 &&
+            delims['{'] === 0 &&
+            isAssignOp(token.tt)
+        ) {
             // This is an AssignExpr
-            for (let t of tokens_read.reverse())
-                stream.pushback(t);
             status = AssignExpr(stream, value);
             if (!status)
                 return false;
         } else {
             // Just do OrExpr
-            for (let t of tokens_read.reverse())
-                stream.pushback(t);
             status = OrExpr(stream, value);
             if (!status)
                 return false;
@@ -695,7 +754,8 @@ export function Expr(stream, retval) {
         // Just do OrExpr
         stream.pushback(token);
         status = OrExpr(stream, value);
-        if (!status) return false;
+        if (!status)
+            return false;
     }
     retval.setFromValue(value);
     return true;
@@ -1089,10 +1149,10 @@ export function AddExpr(stream, retval) {
     return true;
 }
 
-// Term -> PowFactor {(* | / | %) PowFactor}*
+// Term -> FuncChain {(* | / | %) FuncChain}*
 export function Term(stream, retval) {
     let val1 = new Value(), val2 = new Value();
-    let t1 = SFactor(stream, val1);
+    let t1 = FuncChain(stream, val1);
 
     if (!t1)
         return false;
@@ -1105,6 +1165,48 @@ export function Term(stream, retval) {
         token?.tt == TokenType.MULT ||
         token?.tt == TokenType.DIV  ||
         token?.tt == TokenType.MOD
+    ) {
+        t1 = FuncChain(stream, val2);
+
+        if (!t1)
+            return parse_error("Missing operand after operator");
+
+        if (!retval.isNumber() || !val2.isNumber())
+            return parse_error(`Illegal types for ${token.lexeme}: ${retval.typeStr()} and ${val2.typeStr()}`)
+        // Evaluate
+        if (token.tt == TokenType.MULT)
+            retval.setFromValue(retval.mult(val2));
+        if (token.tt == TokenType.DIV) {
+            if (val2.Ntemp === 0)
+                return parse_error("Divide by zero");
+            retval.setFromValue(retval.div(val2));
+        }
+        if (token.tt == TokenType.MOD)
+            retval.setFromValue(retval.mod(val2));
+
+        token = stream.next();
+    }
+    stream.pushback(token);
+    return true;
+}
+
+// FuncChain -> SFactor {-> SFactor}*
+export function FuncChain(stream, retval) {
+    return SFactor(stream, retval);
+
+    // TODO: Figure this out
+    let val1 = new Value(), val2 = new Value();
+    let t1 = SFactor(stream, val1);
+
+    if (!t1)
+        return false;
+
+    retval.setFromValue(val1);
+
+    let token = stream.next();
+
+    while (
+        token.tt === TokenType.RARROW
     ) {
         t1 = SFactor(stream, val2);
 
@@ -1130,23 +1232,21 @@ export function Term(stream, retval) {
     return true;
 }
 
-// PowFactor -> Factor ** SFactor
-export function PowFactor(stream, retval) {
-
-}
-
 // SFactor -> (typeof | + | - | ! | ~) AccessFactor
 export function SFactor(stream, retval) {
-    let token = stream.next();
     let unary = null;
+    let status = false;
+    let token = stream.next();
     if (isUnaryOp(token.tt))
         unary = token;
     else
         stream.pushback(token);
 
-    // return Factor(stream, unary, retval);
-    // let status = Factor(stream, unary, retval);
-    let status = AccessFactor(stream, retval);
+    if (isUnaryOp(stream.peek().tt))
+        status = SFactor(stream, retval);
+    else
+        status = AccessFactor(stream, retval);
+
     if (!status)
         return false
     if (unary !== null) {
@@ -1234,7 +1334,6 @@ export function AccessFactor(stream, retval) {
         else if (token.tt === TokenType.LPAREN) {
             if (!retval.isFunction())
                 return parse_error("Value is not callable");
-            // debugger;
             status = FunctionCall(stream, retval, val, token.lexeme);
             if (!status)
                 return false;
