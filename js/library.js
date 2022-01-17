@@ -44,17 +44,6 @@ export const library =
             i += 1;
         }
     }
-    fn filter(arr, predicate) {
-        let res = [];
-        let i = 0;
-        while i < len(arr) {
-            if predicate(arr[i]) {
-                push(res, arr[i]);
-            }
-            i += 1;
-        }
-        return res;
-    }
     fn reduce(arr, accumulator) {
         let res = arr[0];
         let i = 1;

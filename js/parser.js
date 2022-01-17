@@ -51,17 +51,24 @@ export const symbolTable = new IdentTable();
 for (const intrinsic in intrinsic_fns)
     symbolTable.add(intrinsic, intrinsic_fns[intrinsic]);
 
+class FunctionState {
+    constructor() {
+        // Allow the use of function specific
+        // keywords like 'return'
+        this.in_function = false;
+        // Let the parser know to expect a
+        // return val, pop it from the stack
+        this.fn_returning = false;
+        // When a function calls a function,
+        // return values are pushed and popped
+        // from the stack when execution ends.
+        this.return_stack = [];
+    }
+}
+
+export const fnState = new FunctionState();
+
 let block_depth = 0;
-// Allow the use of function specific
-// keywords like 'return'
-let in_function = false;
-// Let the parser know to expect a
-// return val, pop it from the stack
-let fn_returning = false;
-// When a function calls a function,
-// return values are pushed and popped
-// from the stack when execution ends.
-const return_stack = [];
 
 export function debug_info(tstream) {
     console.log("--------DEBUG--------");
@@ -164,11 +171,11 @@ export function Stmt(stream) {
             break;
 
         case TokenType.RETURN:
-            if (!in_function)
+            if (!fnState.in_function)
                 return parse_error("Unexpected 'return' call");
             status = ReturnStmt(stream, value);
             from_return = true;
-            fn_returning = true;
+            fnState.fn_returning = true;
             break;
 
         // Empty statment
@@ -422,7 +429,7 @@ export function LetStmt(stream, decl_type) {
 export function ReturnStmt(stream, retval) {
     let val = new Value();
     let status = Expr(stream, val);
-    return_stack.push(val);
+    fnState.return_stack.push(val);
     retval.setFromValue(val);
     return status;
 }
@@ -473,7 +480,7 @@ export function FunctionDef(stream) {
         tokens_read.push(token);
         token = stream.next();
     }
-    let val = Value.fromFunction(tokens_read, params);
+    let val = Value.fromFunction(tokens_read, params, ident);
     symbolTable.add(ident, val);
     stream.pushback(token);
     return true;
@@ -619,6 +626,7 @@ export function EnumList(stream, idents, values) {
         }
         // Enum values can only be number,
         // and cannot be reassigned. (Constant)
+        // TODO: Slightly broken, FIXME
         let value = new Value();
         value.setNumber(cur_enum_value);
         value.constant = true;
@@ -1191,41 +1199,28 @@ export function Term(stream, retval) {
 }
 
 // FuncChain -> SFactor {-> SFactor}*
+// 5 -> print
+//   print(5)
+// typeof 5 -> concat("s") -> print();
+//   print(concat(typeof 5, "s"));
 export function FuncChain(stream, retval) {
     return SFactor(stream, retval);
 
     // TODO: Figure this out
     let val1 = new Value(), val2 = new Value();
     let t1 = SFactor(stream, val1);
-
     if (!t1)
         return false;
-
     retval.setFromValue(val1);
-
     let token = stream.next();
-
     while (
         token.tt === TokenType.RARROW
     ) {
         t1 = SFactor(stream, val2);
-
         if (!t1)
             return parse_error("Missing operand after operator");
-
-        if (!retval.isNumber() || !val2.isNumber())
+        if (!retval.isFunction())
             return parse_error(`Illegal types for ${token.lexeme}: ${retval.typeStr()} and ${val2.typeStr()}`)
-        // Evaluate
-        if (token.tt == TokenType.MULT)
-            retval.setFromValue(retval.mult(val2));
-        if (token.tt == TokenType.DIV) {
-            if (val2.Ntemp === 0)
-                return parse_error("Divide by zero");
-            retval.setFromValue(retval.div(val2));
-        }
-        if (token.tt == TokenType.MOD)
-            retval.setFromValue(retval.mod(val2));
-
         token = stream.next();
     }
     stream.pushback(token);
@@ -1357,8 +1352,9 @@ export function AccessFactor(stream, retval) {
 // Factor -> string
 // Factor -> Array
 // Factor -> Object
+// Factor -> FunctionLiteral
+// Factor -> ident
 // Factor -> ( Expr )
-// Factor -> VariableRef
 export function Factor(stream, retval) {
     let token = stream.next();
     let val = new Value();
@@ -1496,7 +1492,6 @@ export function Object(stream, retval) {
 
 // Starts with the assumption `ident` and `(` have already been read.
 // FunctionCall -> ident ( ArgList )
-//export function FunctionCall(stream, ident, retval) {
 export function FunctionCall(stream, fnval, retval, ident) {
     let args = [];
     //const fn = symbolTable.find(ident);
@@ -1527,19 +1522,19 @@ export function FunctionCall(stream, fnval, retval, ident) {
     symbolTable.addScope();
     for (let [arg, param] of arg_zip)
         symbolTable.add(param, arg);
-    if (in_function)
+    if (fnState.in_function)
         nested = true;
-    in_function = true;
+    fnState.in_function = true;
     status = Stmts(subroutine);
     if (!nested)
-        in_function = false;
+        fnState.in_function = false;
     symbolTable.popScope();
 
-    if (fn_returning)
-        retval.setFromValue(return_stack.pop());
+    if (fnState.fn_returning)
+        retval.setFromValue(fnState.return_stack.pop());
     else
         retval.setNumber(1);
-    fn_returning = false;
+    fnState.fn_returning = false;
     return true;
 }
 

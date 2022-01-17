@@ -119,11 +119,12 @@ export class Value {
         this.vt = ValType.Object;
         this.Otemp = o;
     }
-    setFunction(tokens, params) {
+    setFunction(tokens, params, name) {
         this.vt = ValType.Function;
         this.Ftemp = {};
         this.Ftemp.tokens = tokens;
         this.Ftemp.params = params;
+        this.Ftemp.name = name;
     }
     setFunctionIntrinsic(params, fn, returns) {
         this.vt = ValType.Function;
