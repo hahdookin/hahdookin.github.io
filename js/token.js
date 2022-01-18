@@ -82,7 +82,12 @@ export class TokenType {
     static DOT        = 73;
     static DOTDOT     = 74;
     static ELLIPSIS   = 75;
-    static END        = 76;
+    static TNumber    = 76;
+    static TString    = 77;
+    static TArray     = 78;
+    static TObject    = 79;
+    static TFunction  = 80;
+    static END        = 81;
 }
 
 export function token_type_str(tt) {
@@ -284,7 +289,7 @@ export const keywords_symbols = [
 
 export const operators = new PrefixTrie();
 export const keywords = new PrefixTrie();
-export const intrinsics = new PrefixTrie();
+export const types = new PrefixTrie();
 
 // All recongized operators
 operators.insert("!", TokenType.NOT);
@@ -361,3 +366,10 @@ keywords.insert("struct", TokenType.STRUCT);
 keywords.insert("while", TokenType.WHILE);
 keywords.insert("typeof", TokenType.TYPEOF);
 keywords.insert("typedef", TokenType.TYPEDEF);
+
+// All recongized types
+types.insert("Number");
+types.insert("String");
+types.insert("Array");
+types.insert("Object");
+types.insert("Function");

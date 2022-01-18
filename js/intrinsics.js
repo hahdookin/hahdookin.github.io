@@ -1,10 +1,6 @@
 import { Value, ValType } from "./value.js";
 
-import {
-    symbolTable,
-    fnState,
-    Stmts
-} from "./parser.js";
+import { call } from "./parser.js";
 function zip(a1, a2) {
     return a1.map((e, i) => [e, a2[i]]);
 }
@@ -17,7 +13,7 @@ function zip(a1, a2) {
 // a 'Value', if it returns anything.
 
 export const intrinsic_fns = {};
-// {
+// intrinsic_docs {
 //   desc: String[],
 //   params: {
 //      name: String,
@@ -337,6 +333,171 @@ function shallowcopy(src) {
 }
 add("shallowcopy", ["src"], shallowcopy, true);
 
+intrinsic_docs["filter"] = {
+    desc: [
+        "Creates an array based on another filtered",
+        "by a predicate."
+    ],
+    params: [
+        { name: "arr", type: "Array" },
+        { name: "f",  type: "Function (Any)" }
+    ],
+    returns: {
+        type: "Array",
+        desc: "arr with all elements where f(arr[i]) is true"
+    },
+    example: [
+        "fn positive(x) { return x >= 0; }",
+        "let arr = filter([-1, 0, 1], positive);",
+        "print(arr); # [0, 1]"
+    ]
+}
+function filter(arr, f) {
+    let value = new Value();
+    value.setArray([]);
+    for (const val of arr.Atemp) {
+        let retval = call(f, [val]);
+        if (retval.Ntemp)
+            value.addArrayValue(val);
+    }
+    return value;
+}
+add("filter", ["arr", "f"], filter, true);
+
+intrinsic_docs["map"] = {
+    desc: [
+        "Creates an array based on another with each",
+        "element mapped by a function."
+    ],
+    params: [
+        { name: "arr", type: "Array" },
+        { name: "f",  type: "Function (Any)" }
+    ],
+    returns: {
+        type: "Array",
+        desc: "arr where all elements are f(arr[i])"
+    },
+    example: [
+        "fn square(x) { return pow(x, 2); }",
+        "let arr = map([1, 2, 3], square);",
+        "print(arr); # [1, 4, 9]"
+    ]
+}
+function map(arr, f) {
+    let value = new Value();
+    value.setArray([]);
+    for (const val of arr.Atemp) {
+        value.addArrayValue(call(f, [val]));
+    }
+    return value;
+}
+add("map", ["arr", "f"], map, true);
+
+intrinsic_docs["reverse"] = {
+    desc: [
+        "Creates an array based on another with each",
+        "element in reverse order."
+    ],
+    params: [
+        { name: "arr", type: "Array" },
+    ],
+    returns: {
+        type: "Array",
+        desc: "reversed array"
+    },
+    example: [
+        "let arr = reverse([1, 2, 3]);",
+        "print(arr); # [3, 2, 1]"
+    ]
+};
+function reverse(arr) {
+    let value = new Value();
+    value.setArray([]);
+    for (const val of [...arr.Atemp].reverse()) {
+        value.addArrayValue(val);
+    }
+    return value;
+};
+add("reverse", ["arr"], reverse, true);
+
+intrinsic_docs["foreach"] = {
+    desc: [
+        "Calls a function on each element of an array",
+    ],
+    params: [
+        { name: "arr", type: "Array" },
+        { name: "f",  type: "Function (Any)" }
+    ],
+    returns: {},
+    example: [
+        'let arr = ["apple", "banana"];',
+        "foreach(arr, print);",
+        "# apple",
+        "# banana"
+    ]
+};
+function foreach(arr, f) {
+    for (const val of arr.Atemp)
+        call(f, [val]);
+}
+add("foreach", ["arr", "f"], foreach, false);
+
+intrinsic_docs["reduce"] = {
+    desc: [
+        "Reduce an array to a single value with an",
+        "accumulator function."
+    ],
+    params: [
+        { name: "arr", type: "Array" },
+        { name: "f",  type: "Function (Any, Any)" }
+    ],
+    returns: {
+        type: "Any",
+        desc: "Value accumulated by accumulator."
+    },
+    example: [
+        "fn add(p, c) { return p + c; }",
+        "let arr = [1, 2, 3];",
+        "print(reduce(arr, add)); # 6"
+    ]
+}
+function reduce(arr, f) {
+    if (arr.Atemp.length === 0) {
+        // ERROR
+    }
+    let accum = Value.from(arr.Atemp[0]);
+    for (let i = 1; i < arr.Atemp.length; i++) {
+        let cur = arr.Atemp[i];
+        accum.setFromValue(call(f, [accum, cur]))
+    }
+    return accum;
+}
+add("reduce", ["arr", "f"], reduce, true);
+
+intrinsic_docs["range"] = {
+    desc: [
+        "Creates a range from a start and stop"
+    ],
+    params: [
+        { name: "start", type: "Number" },
+        { name: "stop",  type: "Number" }
+    ],
+    returns: {
+        type: "Array [Number]",
+        desc: "Sequence of the range"
+    },
+    //example: [ ]
+};
+function range(start, stop) {
+    let value = new Value();
+    value.setArray([]);
+    for (let i = start.Ntemp; i < stop.Ntemp; i++) {
+        value.addArrayValue(Value.fromNumber(i));
+    }
+    return value;
+}
+add("range", ["start", "stop"], range, true);
+
 //===========================
 // Object library
 //===========================
@@ -451,6 +612,16 @@ function assert(expr, msg) {
         console.error(msg.Stemp);
 }
 add("assert", ["expr", "msg"], assert, false);
+
+// TIMER FNS
+function timerstart() {
+    return Value.fromNumber(Date.now());
+}
+add("timerstart", [], timerstart, true);
+function timerend(timer) {
+    print(Value.fromString("" + (Date.now() - timer.Ntemp) + "ms"))
+}
+add("timerend", ["timer"], timerend, false);
 
 //===========================
 // String library
@@ -590,72 +761,6 @@ function toupper(str) {
     return Value.fromString(str.Stemp.toUpperCase());
 }
 add("toupper", ["str"], toupper, true);
-
-// fn: FunctionValue, args: Value[]
-function call(fn, args) {
-    let value = new Value();
-    if (fn.isIntrinsic()) {
-        let res = fn.Ftemp.fn(...args);
-        if (fn.Ftemp.returns) {
-            return res;
-        } else {
-            return Value.fromNumber(1);
-        }
-    }
-
-    const subroutine = fn.toTokenStream();
-    const arg_zip = zip(args, fn.Ftemp.params);
-
-    let nested = false;
-    symbolTable.addScope();
-    for (let [arg, param] of arg_zip)
-        symbolTable.add(param, arg);
-    if (fnState.in_function)
-        nested = true;
-    fnState.in_function = true;
-    status = Stmts(subroutine);
-    if (!nested)
-        fnState.in_function = false;
-    symbolTable.popScope();
-
-    if (fnState.fn_returning)
-        value.setFromValue(fnState.return_stack.pop());
-    else
-        value.setNumber(1);
-    fnState.fn_returning = false;
-    return value;
-}
-
-intrinsic_docs["filter"] = {
-    desc: [
-        "Creates an array based on another filtered",
-        "by a predicate."
-    ],
-    params: [
-        { name: "arr", type: "Array" },
-        { name: "f",  type: "Function" }
-    ],
-    returns: {
-        type: "Array",
-        desc: "arr with all elements where f(arr[i]) is true"
-    },
-    example: [
-        "fn positive(x) { return x >= 0; }",
-        "let arr = [-1, 0, 1];",
-        "print(arr); # [0, 1]"
-    ]
-}
-function filter(arr, f) {
-    let value = new Value();
-    value.setArray([]);
-    for (const val of arr.Atemp) {
-        let retval = call(f, [val]);
-        if (retval.Ntemp)
-            value.addArrayValue(val);
-    }
-    return value;
-}
-add("filter", ["arr", "f"], filter, true);
 
 //===========================
 // Math library

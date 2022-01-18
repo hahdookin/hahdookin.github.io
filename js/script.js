@@ -1,29 +1,10 @@
-import { StringStream } from "./charstream.js";
-import { Stmts, debug_info } from "./parser.js";
 import { TokenStream } from "./lexer.js";
-import { library } from "./library.js";
+import { Stmts, debug_info } from "./parser.js";
 
 export function interpret(line) {
-    const sstream = new StringStream(line);
-    const tstream = new TokenStream(sstream);
+    const tstream = new TokenStream(line);
     Stmts(tstream);
 }
-
-const ss = new StringStream(
-    `
-    # test(fn, arg)
-    fn f(x) { return x >= 0; }
-    final arr = filter([-2, -1, 0, 1, 2], f);
-    print(arr);
-
-    #fn pos(n) { return n >= 0; }
-    #forEach(map(filter(a, pos), sqrt), printf);
-    `
-);
-const ts = new TokenStream(ss);
-
-let status = Stmts(ts);
-debug_info(ts);
 
 window.x = interpret;
 
