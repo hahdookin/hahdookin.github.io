@@ -6,7 +6,6 @@ import {
 } from "./intrinsics.js";
 import { symbolTable } from "./parser.js";
 import { Value } from "./value.js";
-import { StringStream } from "./charstream.js";
 import { TokenStream } from "./lexer.js";
 import {
     TokenType,
@@ -53,16 +52,18 @@ tutorial_pages.push([
 ]);
 tutorial_pages.push([
     "Page 1/?: <u>Data Types</u>",
-    "There are 4 main data types:",
+    "There are 5 main data types:",
     "Number:",
     highlight("   42, -3.14, 0xFF, 0b101"),
     "String:",
     highlight('   "Hello, world!"'),
     "Array:",
     highlight('   [1, 2, ["3", 4]]'),
+    "Object:",
+    highlight('   {x: 3, "y": 9}'),
     "Function:",
     highlight("   fn f(a, b) { return a + b; }"),
-    highlight("   x = fn() { print(99); };"),
+    highlight("   f = fn() { print(99); };"),
 ]);
 tutorial_pages.push([
     "Page 2/?: <u>Control Flow</u>",
@@ -392,7 +393,9 @@ locations["about"] = [
     "like this site you're on right now.",
     "",
     `Make sure to ${highlight('goto("projects");')} to see`,
-    "some of the stuff I've worked on."
+    "some of the stuff I've worked on.",
+    "",
+    `You can also ${highlight('goto("contact")')} to contact me.`
 ];
 locations["contact"] = [
     'Shoot me an email at <a href="mailto: ChrisPaneCS@gmail.com">ChrisPaneCS@gmail.com</a>.',
@@ -438,9 +441,7 @@ prompt.addEventListener("keydown", e => {
         // Handle line continuation
         const last = prompt.innerText.trim();
         if (last.charCodeAt(last.length - 1) === 92) // 92 is '\'
-        {
             return;
-        }
         log(cur_loc, highlighted.innerHTML);
         interpret(prompt.innerText);
         // Handle command history
@@ -499,7 +500,7 @@ function token_highlight_class(token, peek) {
 // Take in a line of code and highlight with CSS
 function highlight(line) {
     // Create a parse tree
-    let tstream = new TokenStream(new StringStream(line), true);
+    let tstream = new TokenStream(line, true);
     let tokens = [];
     let cur = tstream.next();
     let peek = tstream.peek();
@@ -546,6 +547,10 @@ log(cur_loc, " \\______/  \\_______|\\_______/ \\_______/ ");
 log(cur_loc, "");
 
 goto(Value.fromString("home"));
+
+interpret(`
+
+`)
 
 set_time();
 window.setInterval(set_time, 500);

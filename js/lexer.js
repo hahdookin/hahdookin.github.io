@@ -2,6 +2,7 @@
 // lexer.js
 //=======================
 
+import { StringStream } from "./charstream.js";
 import {
     Token,
     TokenType,
@@ -193,8 +194,8 @@ function get_next_token(stream, return_comments=false) {
 
 // Uses a StringStream to create a flow of tokens
 export class TokenStream {
-    constructor(stream, return_comments=false) {
-        this.stream = stream;
+    constructor(content, return_comments=false) {
+        this.stream = new StringStream(content);
         this.pushback_stack = [];
         // Typically, the parser wants to ignore
         // comment tokens. However, when doing

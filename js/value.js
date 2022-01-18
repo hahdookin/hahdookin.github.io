@@ -1,4 +1,3 @@
-import { StringStream } from "./charstream.js";
 import { TokenStream } from "./lexer.js";
 
 export class ValType {
@@ -32,7 +31,6 @@ export class Value {
         res.Atemp = other.Atemp;
         res.Otemp = other.Otemp;
         res.Ftemp = other.Ftemp;
-        // res.Ftemp = Object.assign({}, other.Ftemp);
         return res;
     }
     static fromNumber(n) {
@@ -55,7 +53,7 @@ export class Value {
         res.Ftemp = null;
         return res;
     }
-    static fromFunction(tokens, params) {
+    static fromFunction(tokens, params, ident) {
         let res = new Value();
         res.vt = ValType.Function;
         res.Ntemp = null;
@@ -66,6 +64,7 @@ export class Value {
         res.Ftemp.tokens = tokens;
         res.Ftemp.params = params;
         res.Ftemp.intrinsic = false;
+        res.Ftemp.name = ident;
         return res;
     }
     static fromArray(a) {
@@ -89,12 +88,10 @@ export class Value {
         return res;
     }
 
-    toStringStream() {
-        let s = this.Ftemp.tokens.map(t => t.lexeme).join(' ');
-        return new StringStream(s);
-    }
     toTokenStream() {
-        return new TokenStream(this.toStringStream());
+        // let s = this.Ftemp.tokens.map(t => t.lexeme).join(' ');
+        let s = this.Ftemp.tokens.join(' ');
+        return new TokenStream(s);
     }
     paramCount() {
         return this.Ftemp.params.length;
