@@ -1,4 +1,3 @@
-import { StringStream } from "./charstream.js";
 import { TokenStream } from "./lexer.js";
 import {
     Token,
@@ -117,6 +116,32 @@ function parse_error(msg) {
     return false;
 }
 
+// Starts when a '{', end when matching '}' is read
+// Closing '}' is pushed back and handled by nonterminal
+// Store body tokens in body_tokens
+function readTillBlockEnd(stream, body_tokens) {
+    let token = stream.next();
+    if (token.tt === TokenType.RBRACE) {
+        stream.pushback(token);
+        return true;
+    }
+    let lbrace_count = 0;
+    while (token.tt !== TokenType.END) {
+        if (token.tt === TokenType.RBRACE) {
+            if (lbrace_count === 0)
+                break;
+            lbrace_count--;
+        }
+        if (token.tt === TokenType.LBRACE)
+            lbrace_count++;
+        body_tokens.push(token.lexeme);
+        token = stream.next();
+    }
+    // Push the closing '}' back into the stream
+    stream.pushback(token);
+    return true;
+}
+
 // Stmt -> ;
 // Stmt -> Expr ;
 // Stmt -> LetStmt ;
@@ -221,8 +246,8 @@ export function Stmts(stream) {
     let token = stream.next();
     // The empty case
     if (
-        (token.tt == TokenType.RBRACE && block_depth != 0) ||
-        token.tt == TokenType.END
+        (token.tt === TokenType.RBRACE && block_depth !== 0) ||
+        token.tt === TokenType.END
     ) {
         stream.pushback(token);
         return true;
@@ -246,17 +271,26 @@ export function Stmts(stream) {
     return true;
 }
 
+// Block is implemented weirdly. When a block
+// is expanded to { Stmts }, it will read and
+// execute until the closing '}' is read, and
+// then that '}' is pushed back into the token
+// stream to be handled by whatever calling
+// non-terminal. This has lead to some needless
+// checks for closing '}'s all over the program.
+// This should be handled explicitly by this
+// non-terminal.
 // Block -> Stmt | { Stmts }
 export function Block(stream) {
     let token = stream.next();
     let status = false;
-    if (token.tt == TokenType.LBRACE) {
+    if (token.tt === TokenType.LBRACE) {
         block_depth++;
         symbolTable.addScope();
         status = Stmts(stream);
         symbolTable.popScope();
         token = stream.next();
-        if (token.tt != TokenType.RBRACE)
+        if (token.tt !== TokenType.RBRACE)
             return parse_error("Missing closing `}` in block");
         block_depth--;
     } else {
@@ -288,22 +322,10 @@ export function ForStmt(stream) {
         return parse_error("Missing '{' in for stmt")
 
     // Save tokens for the body
-    let lbrace_count = 0;
-    token = stream.next();
     let body_tokens = [];
-    while (token.tt !== TokenType.END) {
-        if (token.tt === TokenType.RBRACE) {
-            if (lbrace_count === 0)
-                break;
-            lbrace_count--;
-        }
-        if (token.tt === TokenType.LBRACE)
-            lbrace_count++;
-        body_tokens.push(token.lexeme);
-        token = stream.next();
-    }
-    stream.pushback(token);
-    const body = new TokenStream(new StringStream(body_tokens.join(' ')));
+    // debugger;
+    readTillBlockEnd(stream, body_tokens);
+    const body = new TokenStream(body_tokens.join(' '));
     symbolTable.addScope();
     for (const val of iter_value.Atemp) {
         symbolTable.add(loop_ident, Value.from(val));
@@ -330,23 +352,11 @@ export function WhileStmt(stream) {
     }
 
     // Save tokens for the body
-    let lbrace_count = 0;
-    token = stream.next();
     let body_tokens = [];
-    while (token.tt !== TokenType.END) {
-        if (token.tt === TokenType.RBRACE) {
-            if (lbrace_count === 0)
-                break;
-            lbrace_count--;
-        }
-        if (token.tt === TokenType.LBRACE)
-            lbrace_count++;
-        body_tokens.push(token.lexeme);
-        token = stream.next();
-    }
-    stream.pushback(token);
-    const cond = new TokenStream(new StringStream(expr_tokens.join(' ')));
-    const body = new TokenStream(new StringStream(body_tokens.join(' ')));
+    readTillBlockEnd(stream, body_tokens);
+
+    const cond = new TokenStream(expr_tokens.join(' '));
+    const body = new TokenStream(body_tokens.join(' '));
     // debugger;
     let value = new Value();
     let status = Expr(cond, value);
@@ -377,17 +387,48 @@ export function IfStmt(stream) {
         return parse_error("Bad conditional in if");
     if (!value.isNumber())
         return parse_error("Condition must evaluate to number");
-    if (value.Ntemp)
+
+    if (value.Ntemp) {
+        // If is true, execute block
         status = Block(stream);
+        if (!status)
+            return false;
+    }
     else {
-        // read tokens until end of block
+        // Skip 'if' block
         token = stream.next();
-        while (token.tt !== TokenType.RBRACE)
-            token = stream.next();
-        stream.pushback(token);
+        if (token.tt !== TokenType.LBRACE)
+            return parse_error("Expected '{'");
+        readTillBlockEnd(stream, []);
+    }
+
+    let rbrace = stream.next();
+    if (rbrace.tt !== TokenType.RBRACE)
+        return false;
+    let elsetoken = stream.next();
+    if (elsetoken.tt !== TokenType.ELSE) {
+        stream.pushback(elsetoken);
+        stream.pushback(rbrace);
         return true;
     }
-    return status;
+
+    // At beginning of else block '{'
+    if (value.Ntemp) {
+        // If was executed, skip else
+        token = stream.next();
+        if (token.tt !== TokenType.LBRACE)
+            return parse_error("Expected '{'");
+        // Skip 'if' block
+        readTillBlockEnd(stream, []);
+        return true;
+    }
+    else {
+        // Execute else block
+        status = Block(stream);
+        if (!status)
+            return false;
+    }
+    return true;
 }
 
 // Starts with the assumption a `let` has already been read.
@@ -456,6 +497,8 @@ export function FunctionDef(stream) {
         return parse_error("Missing `(` in fn param list");
     let params = [];
     status = ParamList(stream, params);
+    if (!status)
+        return false;
     token = stream.next();
     if (token.tt !== TokenType.RPAREN)
         return parse_error("Missing `)` in fn param list");
@@ -466,23 +509,10 @@ export function FunctionDef(stream) {
     // Start saving tokens for fn body
     // until the closing '}' is read.
     // Don't save the closing '}'.
-    let lbrace_count = 0;
-    token = stream.next();
     let tokens_read = [];
-    while ( token.tt !== TokenType.END) {
-        if (token.tt === TokenType.RBRACE) {
-            if (lbrace_count === 0)
-                break;
-            lbrace_count--;
-        }
-        if (token.tt === TokenType.LBRACE)
-            lbrace_count++;
-        tokens_read.push(token);
-        token = stream.next();
-    }
+    readTillBlockEnd(stream, tokens_read);
     let val = Value.fromFunction(tokens_read, params, ident);
     symbolTable.add(ident, val);
-    stream.pushback(token);
     return true;
 }
 
@@ -511,22 +541,14 @@ export function FunctionLiteral(stream, retval) {
     // Start saving tokens for fn body
     // until the closing '}' is read.
     // Don't save the closing '}'.
-    let lbrace_count = 0;
-    token = stream.next();
+    // let lbrace_count = 0;
+    // token = stream.next();
     let tokens_read = [];
-    while ( token.tt !== TokenType.END) {
-        if (token.tt === TokenType.RBRACE) {
-            if (lbrace_count === 0)
-                break;
-            lbrace_count--;
-        }
-        if (token.tt === TokenType.LBRACE)
-            lbrace_count++;
-        tokens_read.push(token);
-        token = stream.next();
-    }
+    readTillBlockEnd(stream, tokens_read);
     let val = Value.fromFunction(tokens_read, params);
     retval.setFromValue(val);
+    // Confirm closing '}'
+    token = stream.next();
     if (token.tt !== TokenType.RBRACE)
         return parse_error("Missing closing '}' in function literal");
     return true;
@@ -544,10 +566,10 @@ export function ParamList(stream, params) {
     }
 
     while (token.tt !== TokenType.RPAREN) {
-        // stream.pushback(token);
-        // token = stream.next();
         if (token.tt !== TokenType.Ident)
             return parse_error("Expected ident in param list");
+        if (params.includes(token.lexeme))
+            return parse_error(`Redeclaration of param '${token.lexeme}'`)
         params.push(token.lexeme);
         token = stream.next();
         if (token.tt !== TokenType.COMMA && token.tt !== TokenType.RPAREN)
@@ -577,41 +599,42 @@ export function EnumDef(stream) {
     }
     if (token.tt !== TokenType.LBRACE)
         return parse_error("Missing opening '{' in enum def");
-    let idents = [];
-    let values = [];
-    let status = EnumList(stream, idents, values);
+    let status = EnumList(stream, enum_ident);
     if (!status)
         return false;
-    if (enum_ident !== null) {
-        const val = new Value();
-        for (const [ident, val] of zip(idents, values))
-            val.setObjectValue(ident, val);
-        symbolTable.add(enum_ident, val);
-    } else {
-        // Anonymous enum! Unscoped!
-        for (const [ident, val] of zip(idents, values))
-            symbolTable.add(ident, val);
-    }
     return true;
 }
 
 // EnumList -> Empty | ident {= OrExpr}{, EnumList}
-export function EnumList(stream, idents, values) {
+export function EnumList(stream, enum_ident) {
     let cur_enum_value = 0;
     let token = stream.next();
 
     // Empty enum list
-    if (token.tt === TokenType.RBRACE) {
-        stream.pushback(token);
-        return true;
-    }
+    if (token.tt === TokenType.RBRACE)
+        return parse_error("Empty enum not allowed.");
 
+    let scopedval = new Value();
+    scopedval.setObject({});
+    scopedval.constant = true;
+    let scoped_idents = [];
     while (token.tt !== TokenType.RBRACE) {
         if (token.tt !== TokenType.Ident)
             return parse_error("Expected ident in enum list");
+
         let symbolname = token.lexeme;
-        if (symbolTable.findInCurrentScope(symbolname))
-            return parse_error(`Redeclaration of '${symbolname}' in enum list`);
+        if (enum_ident === null) {
+            // Unscoped Enum
+            if (symbolTable.findInCurrentScope(symbolname))
+                return parse_error(`Redeclaration of '${symbolname}' in enum list`);
+        } else {
+            // Scoped Enum
+            //if (scoped_idents.includes(symbolname))
+            if (scopedval.hasKey(symbolname))
+                return parse_error(`Redeclaration of '${symbolname}' in scoped enum list`);
+            //scoped_idents.push(symbolname);
+        }
+
         token = stream.next();
         if (token.tt === TokenType.ASSIGN) {
             let expr_val = new Value();
@@ -626,13 +649,18 @@ export function EnumList(stream, idents, values) {
         }
         // Enum values can only be number,
         // and cannot be reassigned. (Constant)
-        // TODO: Slightly broken, FIXME
         let value = new Value();
         value.setNumber(cur_enum_value);
         value.constant = true;
-        idents.push(symbolname);
-        values.push(value);
         cur_enum_value++;
+
+        if (enum_ident === null) {
+            // Unscoped enum, add to current scope
+            symbolTable.add(symbolname, value);
+        } else {
+            // Scoped enum, add as read-only member of object
+            scopedval.setObjectValue(symbolname, value);
+        }
 
         token = stream.next();
         if (token.tt !== TokenType.COMMA && token.tt !== TokenType.RBRACE)
@@ -641,6 +669,9 @@ export function EnumList(stream, idents, values) {
             stream.pushback(token)
         else
             token = stream.next();
+    }
+    if (enum_ident !== null) {
+        symbolTable.add(enum_ident, scopedval);
     }
     return true;
 }
@@ -1204,8 +1235,6 @@ export function Term(stream, retval) {
 // typeof 5 -> concat("s") -> print();
 //   print(concat(typeof 5, "s"));
 export function FuncChain(stream, retval) {
-    return SFactor(stream, retval);
-
     // TODO: Figure this out
     let val1 = new Value(), val2 = new Value();
     let t1 = SFactor(stream, val1);
@@ -1329,7 +1358,7 @@ export function AccessFactor(stream, retval) {
         else if (token.tt === TokenType.LPAREN) {
             if (!retval.isFunction())
                 return parse_error("Value is not callable");
-            status = FunctionCall(stream, retval, val, token.lexeme);
+            status = FunctionCall(stream, retval, val, retval.Ftemp.name ?? "anonymous");
             if (!status)
                 return false;
         }
@@ -1468,7 +1497,7 @@ export function Object(stream, retval) {
             if (!status)
                 return false;
             if (!val.isString())
-                return parse_error("Object key must be string or ident");
+                return parse_error("Object key must be string");
             key = val.Stemp;
             token = stream.next();
             if (token.tt !== TokenType.COLON)
@@ -1490,33 +1519,21 @@ export function Object(stream, retval) {
     return true;
 }
 
-// Starts with the assumption `ident` and `(` have already been read.
-// FunctionCall -> ident ( ArgList )
-export function FunctionCall(stream, fnval, retval, ident) {
-    let args = [];
-    //const fn = symbolTable.find(ident);
-    let status = ArgList(stream, args);
-    if (!status)
-        return false;
-    let token = stream.next();
-    if (token.tt !== TokenType.RPAREN)
-        return parse_error("Missing closing paren in func call");
-    if (args.length !== fnval.Ftemp.params.length)
-        return parse_error(`Expected ${fnval.paramCount()} args, got ${args.length}, in function ${ident ?? "anonymous"}`);
-
-    // TODO: Make sure this is correct
-    if (fnval.isIntrinsic()) {
-        let res = fnval.Ftemp.fn(...args);
-        if (fnval.Ftemp.returns) {
-            retval.setFromValue(res);
+// fn: FunctionValue, args: Value[]
+export function call(fn, args) {
+    let value = new Value();
+    if (fn.isIntrinsic()) {
+        let res = fn.Ftemp.fn(...args);
+        if (fn.Ftemp.returns) {
+            return res;
         } else {
-            retval.setNumber(1);
+            // Implicit return 1
+            return Value.fromNumber(1);
         }
-        return true;
     }
 
-    const subroutine = fnval.toTokenStream();
-    const arg_zip = zip(args, fnval.Ftemp.params);
+    const subroutine = fn.toTokenStream();
+    const arg_zip = zip(args, fn.Ftemp.params);
 
     let nested = false;
     symbolTable.addScope();
@@ -1531,10 +1548,29 @@ export function FunctionCall(stream, fnval, retval, ident) {
     symbolTable.popScope();
 
     if (fnState.fn_returning)
-        retval.setFromValue(fnState.return_stack.pop());
+        value.setFromValue(fnState.return_stack.pop());
     else
-        retval.setNumber(1);
+        // Implicit return 1
+        value.setNumber(1);
     fnState.fn_returning = false;
+    return value;
+}
+
+// Starts with the assumption `ident` and `(` have already been read.
+// FunctionCall -> ident ( ArgList )
+export function FunctionCall(stream, fnval, retval, ident) {
+    let args = [];
+    //const fn = symbolTable.find(ident);
+    let status = ArgList(stream, args);
+    if (!status)
+        return false;
+    let token = stream.next();
+    if (token.tt !== TokenType.RPAREN)
+        return parse_error("Missing closing paren in func call");
+    if (args.length !== fnval.Ftemp.params.length)
+        return parse_error(`Expected ${fnval.paramCount()} args, got ${args.length}, in function ${ident ?? "anonymous"}`);
+
+    retval.setFromValue(call(fnval, args));
     return true;
 }
 
