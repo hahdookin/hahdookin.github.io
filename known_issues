@@ -1,0 +1,2 @@
+Input: enum A { a, b = a; }
+Error: Use of undeclared ident 'a' in expression
