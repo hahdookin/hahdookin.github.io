@@ -11,7 +11,8 @@ import {
     TokenType,
     token_type_str,
     keywords,
-    operators
+    operators,
+    types
 } from "./token.js";
 
 const stream = document.getElementsByClassName("stream")[0];
@@ -265,13 +266,9 @@ function docs(fn) {
         print(Value.fromString(`${tab}none`), true);
     else
         fn_docs.params.forEach(param => {
-            let name = param.name;
-            let type = param.type;
-            type = type.replaceAll(
-                /(String|Array|Object|Number|Function|Any)/g,
-                '<span class="type">$1</span>'
-            );
-            print(Value.fromString(`${tab}${name} : ${type}`), true);
+            const name = param.name;
+            const type = param.type;
+            print(Value.fromString(`${tab}${name} : ${highlight(type)}`), true);
         });
 
     // Print returns
@@ -280,11 +277,8 @@ function docs(fn) {
         print(Value.fromString(`${tab}none`), true);
     } else {
         const return_desc = fn_docs.returns.desc;
-        let return_type = fn_docs.returns.type.replaceAll(
-            /(String|Array|Object|Number|Function|Any)/g,
-            '<span class="type">$1</span>'
-        );
-        print(Value.fromString(`${tab}${return_type} : ${return_desc}`), true);
+        const return_type = fn_docs.returns.type;
+        print(Value.fromString(`${tab}${highlight(return_type)} : ${return_desc}`), true);
     }
 
     // Print examples if they exist
@@ -381,8 +375,9 @@ const locations = {};
 let cur_loc = "home";
 locations["home"] = [
     "Welcome to the command line!",
+    'Check out my <a href="https://github.com/hahdookin" target="_blank">source code</a>.',
     "",
-    "Click <a href=\"../index.html\">here</a> for non-interactive site.",
+    'Click <a href="../index.html">here</a> for non-interactive site.',
     `Enter ${highlight("help();")} for more information.`,
 ]
 locations["about"] = [
@@ -483,6 +478,8 @@ function token_highlight_class(token, peek) {
         return "keyword";
     if (operators.find(token.lexeme))
         return "normaltext";
+    if (types.find(token.lexeme))
+        return "type";
     switch (token.tt) {
         case TokenType.Number:
             return "number";
@@ -493,6 +490,9 @@ function token_highlight_class(token, peek) {
         case TokenType.Ident:
             if (peek.tt === TokenType.LPAREN)
                 return "function";
+            return "normaltext";
+        case TokenType.Error:
+            return "error";
     }
     return "normaltext";
 }
@@ -549,8 +549,13 @@ log(cur_loc, "");
 goto(Value.fromString("home"));
 
 interpret(`
-
+    typedef Object { a: String, b: Array[Function: Any] };
+    typedef Function;
+    typedef Function(String);
+    typedef Function(Array[Any], Number): Function(Array[String]): Any;
+    typedef Function: Array;
 `)
 
 set_time();
 window.setInterval(set_time, 500);
+

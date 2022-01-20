@@ -119,6 +119,9 @@ body .loccolor {
 .comment {
     color: #6A9955;
 }
+.error {
+    color: #F44747;
+}
 
 .DUMMY {
 /*
