@@ -549,11 +549,6 @@ log(cur_loc, "");
 goto(Value.fromString("home"));
 
 interpret(`
-    typedef Object { a: String, b: Array[Function: Any] };
-    typedef Function;
-    typedef Function(String);
-    typedef Function(Array[Any], Number): Function(Array[String]): Any;
-    typedef Function: Array;
 `)
 
 set_time();
