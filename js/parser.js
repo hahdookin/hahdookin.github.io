@@ -3,13 +3,17 @@ import {
     Token,
     TokenType,
 } from "./token.js";
-import { Value } from "./value.js";
+import {
+    Value,
+    Param,
+    CompoundType
+} from "./value.js";
 import { intrinsic_fns } from "./intrinsics.js";
 import { token_type_str } from "./token.js";
-
-function zip(a1, a2) {
-    return a1.map((e, i) => [e, a2[i]]);
-}
+import {
+    zip,
+    unreachable,
+} from "./utils.js";
 
 class IdentTable {
     constructor() {
@@ -45,6 +49,7 @@ class IdentTable {
 }
 
 export const symbolTable = new IdentTable();
+export const typeTable = new IdentTable();
 // Define all intrinsic fns as fns in
 // the global scope
 for (const intrinsic in intrinsic_fns)
@@ -157,8 +162,13 @@ export function Stmt(stream) {
     let from_block = false;
     let from_return = false;
     let value = new Value();
+    let typeval = new CompoundType();
 
     switch (token.tt) {
+        // Empty statment
+        case TokenType.SEMICOLON:
+            return true;
+
         case TokenType.FINAL:
         case TokenType.LET:
             status = LetStmt(stream, token.tt);
@@ -203,17 +213,22 @@ export function Stmt(stream) {
             fnState.fn_returning = true;
             break;
 
-        // Empty statment
-        case TokenType.SEMICOLON:
-            return true;
+
+        case TokenType.TYPEDEF:
+            status = TypeDef(stream, typeval);
+            console.log(typeval.printFmt()); // TODO: remove me
+            console.log(typeTable); // TODO: remove me
+            break;
 
         default:
             stream.pushback(token);
             status = Expr(stream, value);
+            // This line below makes the interpreter
+            // more interactive. TODO: Consider using this.
+            //call(intrinsic_fns["print"], [value]);
             break;
     }
     if (!status)
-        //return parse_error("Error in statement");
         return false;
 
     token = stream.next();
@@ -287,8 +302,10 @@ export function Block(stream) {
     if (token.tt === TokenType.LBRACE) {
         block_depth++;
         symbolTable.addScope();
+        typeTable.addScope();
         status = Stmts(stream);
         symbolTable.popScope();
+        typeTable.popScope();
         token = stream.next();
         if (token.tt !== TokenType.RBRACE)
             return parse_error("Missing closing `}` in block");
@@ -330,6 +347,7 @@ export function ForStmt(stream) {
     for (const val of iter_value.Atemp) {
         symbolTable.add(loop_ident, Value.from(val));
         symbolTable.addScope();
+        typeTable.addScope();
         body.reset();
         status = Stmts(body);
         symbolTable.popScope();
@@ -362,9 +380,11 @@ export function WhileStmt(stream) {
     let status = Expr(cond, value);
     while (value.Ntemp) {
         symbolTable.addScope();
+        typeTable.addScope();
         body.reset();
         status = Stmts(body);
         symbolTable.popScope();
+        typeTable.popScope();
         if (!status)
             return parse_error("Error in while body");
         // Reevaluate conditional
@@ -503,6 +523,13 @@ export function FunctionDef(stream) {
     if (token.tt !== TokenType.RPAREN)
         return parse_error("Missing `)` in fn param list");
     token = stream.next();
+    let rettype = CompoundType.Void();
+    if (token.tt === TokenType.RARROW) {
+        status = TypeExpr(stream, rettype);
+        if (!status)
+            return false;
+        token = stream.next();
+    }
     if (token.tt !== TokenType.LBRACE)
         return parse_error("Missing '{' in fn def");
 
@@ -557,7 +584,7 @@ export function FunctionLiteral(stream, retval) {
 // ParamList -> Empty | ident{, ident}*
 export function ParamList(stream, params) {
     let token = stream.next();
-    let status;
+    let status, type, name;
 
     // Empty param list
     if (token.tt === TokenType.RPAREN) {
@@ -566,14 +593,25 @@ export function ParamList(stream, params) {
     }
 
     while (token.tt !== TokenType.RPAREN) {
+        type = null;
         if (token.tt !== TokenType.Ident)
             return parse_error("Expected ident in param list");
-        if (params.includes(token.lexeme))
+        if (params.map(p => p.name).includes(token.lexeme))
             return parse_error(`Redeclaration of param '${token.lexeme}'`)
-        params.push(token.lexeme);
+        name = token.lexeme;
         token = stream.next();
+        if (token.tt === TokenType.COLON) {
+            type = new CompoundType();
+            status = TypeExpr(stream, type);
+            if (!status)
+                return false;
+            token = stream.next();
+        } else {
+            type = CompoundType.Any();
+        }
+        params.push(new Param(name, type));
         if (token.tt !== TokenType.COMMA && token.tt !== TokenType.RPAREN)
-            return parse_error("Arg list error");
+            return parse_error("Param list error");
         if (token.tt == TokenType.RPAREN)
             stream.pushback(token)
         else
@@ -672,6 +710,150 @@ export function EnumList(stream, enum_ident) {
     }
     if (enum_ident !== null) {
         symbolTable.add(enum_ident, scopedval);
+    }
+    return true;
+}
+
+//===========================
+// Type Expression
+//===========================
+
+// Starts with the assumption a 'typedef' has already been read.
+// TypeDef -> typedef TypeExpr ident ;
+export function TypeDef(stream, typeval) {
+    let status = TypeExpr(stream, typeval);
+    if (!status)
+        return false;
+    let token = stream.next();
+    if (token.tt !== TokenType.Ident)
+        return parse_error("Expected ident in type definition");
+    if (typeTable.findInCurrentScope(token.lexeme))
+        return parse_error(`Redefintion of type ${token.lexeme}`);
+    typeTable.add(token.lexeme, typeval);
+    return true;
+}
+
+// TypeExpr -> Number
+//       | String
+//       | Any
+//       | ArrayType
+//       | ObjectType
+//       | FunctionType
+//
+// ArrayType    -> Array[TypeExpr]
+// ObjectType   -> Object{ident: TypeExpr{, ident: TypeExpr}*}
+// FunctionType -> Function{(TypeExpr{, TypeExpr}*)}{: TypeExpr}
+export function TypeExpr(stream, typeval) {
+    let token = stream.next();
+    let status;
+    switch (token.tt) {
+        case TokenType.Ident:
+            const identval = typeTable.find(token.lexeme);
+            if (!identval)
+                return parse_error(`Use of undeclared type '${token.lexeme}'`);
+            typeval.setFrom(identval);
+            return true;
+        case TokenType.TNumber:
+            typeval.setNumber();
+            return true;
+        case TokenType.TString:
+            typeval.setString();
+            return true;
+        case TokenType.TAny:
+            typeval.setAny();
+            return true;
+        case TokenType.TVoid:
+            typeval.setVoid();
+            return true;
+        case TokenType.TArray:
+            let arrtype = new CompoundType();
+            status = ArrayType(stream, arrtype);
+            typeval.setArray(arrtype);
+            return status;
+        case TokenType.TObject:
+            let keys = [], types = [];
+            status = ObjectType(stream, keys, types);
+            typeval.setObject(keys, types);
+            return status;
+        case TokenType.TFunction:
+            let paramstypes = [], returntype = new CompoundType();
+            status = FunctionType(stream, paramstypes, returntype);
+            typeval.setFunction(paramstypes, returntype);
+            return status;
+    }
+    return false;
+}
+
+// ArrayType -> Array[TypeExpr]
+export function ArrayType(stream, arrtype) {
+    let token = stream.next();
+    if (token.tt !== TokenType.LBRACK) {
+        // Array is just Array[Any]
+        arrtype.setAny();
+        stream.pushback(token);
+        return true;
+    }
+    let status = TypeExpr(stream, arrtype);
+    token = stream.next();
+    if (token.tt !== TokenType.RBRACK)
+        return parse_error("Expected ']' in Array type expression");
+    return true;
+}
+
+// ObjectType -> Object{ident: TypeExpr{, ident: TypeExpr}*}
+export function ObjectType(stream, keys, types) {
+    let token = stream.next();
+    if (token.tt !== TokenType.LBRACE) {
+        stream.pushback(token);
+        // Object is just Object{{anyident: Any}*}
+        return true;
+    }
+
+    while (token.tt !== TokenType.RBRACE) {
+        token = stream.next();
+        if (token.tt !== TokenType.Ident)
+            return parse_error("Expected ident in obj type expression");
+        keys.push(token.lexeme);
+        token = stream.next();
+        if (token.tt !== TokenType.COLON)
+            return parse_error("Expected ':' in obj type expression");
+        let type = new CompoundType();
+        status = TypeExpr(stream, type);
+        types.push(type);
+        token = stream.next();
+        if (
+            token.tt !== TokenType.COMMA &&
+            token.tt !== TokenType.RBRACE
+        )
+            return parse_error("Object type entry list error");
+    }
+    return true;
+}
+
+// FunctionType -> Function{(TypeExpr{, TypeExpr}*)}{: TypeExpr}
+export function FunctionType(stream, paramtypes, returntype) {
+    let token = stream.next();
+    let status;
+    if (token.tt === TokenType.LPAREN) {
+        while (token.tt !== TokenType.RPAREN) {
+            let type = new CompoundType();
+            status = TypeExpr(stream, type);
+            paramtypes.push(type);
+            token = stream.next();
+            if (
+                token.tt !== TokenType.COMMA &&
+                token.tt !== TokenType.RPAREN
+            )
+                return parse_error("Function type param list error");
+        }
+        token = stream.next();
+    }
+
+    if (token.tt === TokenType.COLON) {
+        status = TypeExpr(stream, returntype);
+    } else {
+        returntype.setAny();
+        stream.pushback(token);
     }
     return true;
 }
@@ -1357,7 +1539,7 @@ export function AccessFactor(stream, retval) {
         }
         else if (token.tt === TokenType.LPAREN) {
             if (!retval.isFunction())
-                return parse_error("Value is not callable");
+                return parse_error(`Type '${retval.typeStr()}' is not callable`);
             status = FunctionCall(stream, retval, val, retval.Ftemp.name ?? "anonymous");
             if (!status)
                 return false;
@@ -1366,6 +1548,8 @@ export function AccessFactor(stream, retval) {
             token = stream.next();
             if (token.tt !== TokenType.Ident)
                 return parse_error("Expected ident after '.'");
+            if (!retval.isObject())
+                return parse_error(`Type '${retval.typeStr()}' not allowed for member access.`);
             if (!retval.hasKey(token.lexeme))
                 return parse_error(`Key ${token.lexeme} does not exist`);
             val.setFromValue(retval.getObjectValue(token.lexeme));
@@ -1401,6 +1585,7 @@ export function Factor(stream, retval) {
 
         case TokenType.Number:
             let n = Number(token.lexeme);
+            // let n = Number(remove_seperator(token.lexeme));
             val.setNumber(n);
             retval.setFromValue(val);
             return true;
@@ -1537,8 +1722,9 @@ export function call(fn, args) {
 
     let nested = false;
     symbolTable.addScope();
+    typeTable.addScope();
     for (let [arg, param] of arg_zip)
-        symbolTable.add(param, arg);
+        symbolTable.add(param.name, arg);
     if (fnState.in_function)
         nested = true;
     fnState.in_function = true;
@@ -1546,6 +1732,7 @@ export function call(fn, args) {
     if (!nested)
         fnState.in_function = false;
     symbolTable.popScope();
+    typeTable.popScope();
 
     if (fnState.fn_returning)
         value.setFromValue(fnState.return_stack.pop());
@@ -1567,7 +1754,7 @@ export function FunctionCall(stream, fnval, retval, ident) {
     let token = stream.next();
     if (token.tt !== TokenType.RPAREN)
         return parse_error("Missing closing paren in func call");
-    if (args.length !== fnval.Ftemp.params.length)
+    if (args.length !== fnval.paramCount())
         return parse_error(`Expected ${fnval.paramCount()} args, got ${args.length}, in function ${ident ?? "anonymous"}`);
 
     retval.setFromValue(call(fnval, args));

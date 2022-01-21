@@ -28,15 +28,14 @@ ShiftExpr    -> AddExpr {(<< | >>) AddExpr}*
 AddExpr      -> Term {(+ | -) Term}*
 Term         -> PowFactor {(* | / | %) PowFactor}*
 PowFactor    -> SFactor ** SFactor
-SFactor      -> (+ | - | ! | ~) AccessFactor
+SFactor      -> (typeof | + | - | ! | ~) AccessFactor
 AccessFactor -> Factor { ( ( ArgList ) | [ Expr ] | . ident ) }*
 Factor       -> number
               | string
               | Array
               | Object
-              | FunctionCall
+              | ident
               | ( Expr )
-              | VariableRef
 
 Array        -> [ {Expr {, Expr}} ]
 Object       -> { string : OrExpr{, ObjectKey : OrExpr}* }
@@ -48,6 +47,21 @@ VariableRef  -> ident
               | ident { . ident }*
 
 //=======================
+// Type Expressions
+//=======================
+TypeExpr -> Number
+          | String
+          | Any
+          | Void
+          | ArrayType
+          | ObjectType
+          | FunctionType
+
+ArrayType    -> Array[TypeExpr]
+ObjectType   -> Object{ident: TypeExpr{, ident: TypeExpr}*}
+FunctionType -> Function{(TypeExpr{, TypeExpr}*)}{: TypeExpr}
+
+//=======================
 // Statements
 //=======================
 Stmts        -> empty
@@ -57,16 +71,18 @@ Stmt         -> Expr ;
               | LetStmt ;
               | FunctionDef
               | EnumDef
+              | TypeDef ;
               | Block
               | IfStmt
               | WhileStmt
 Block        -> Stmt
               | { Stmts }
-LetStmt      -> (let | final) Ident = Expr
-IfStmt       -> if Expr Block {else (IfStmt)}
+LetStmt      -> (let | final) Ident = Expr{, Ident = Expr}*
+IfStmt       -> if Expr Block {else Block}
 WhileStmt    -> while Expr Block
 
 FunctionDef  -> fn ident ( ParamList ) Block
 ParamList    -> Empty | ident{, ident}*
 EnumDef      -> enum { EnumList }
-EnumList     -> EnumList -> Empty | ident {= OrExpr}{, EnumList}
+EnumList     -> ident {= OrExpr}{, EnumList}
+TypeDef      -> typedef TypeExpr ident
