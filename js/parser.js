@@ -5,9 +5,9 @@ import {
 } from "./token.js";
 import {
     Value,
-    Param,
-    CompoundType
+    Param
 } from "./value.js";
+import { Type } from "./type.js";
 import { intrinsic_fns } from "./intrinsics.js";
 import { token_type_str } from "./token.js";
 import {
@@ -162,7 +162,7 @@ export function Stmt(stream) {
     let from_block = false;
     let from_return = false;
     let value = new Value();
-    let typeval = new CompoundType();
+    let typeval = new Type();
 
     switch (token.tt) {
         // Empty statment
@@ -217,7 +217,7 @@ export function Stmt(stream) {
         case TokenType.TYPEDEF:
             status = TypeDef(stream, typeval);
             console.log(typeval.printFmt()); // TODO: remove me
-            console.log(typeTable); // TODO: remove me
+            //console.log(typeTable); // TODO: remove me
             break;
 
         default:
@@ -225,7 +225,7 @@ export function Stmt(stream) {
             status = Expr(stream, value);
             // This line below makes the interpreter
             // more interactive. TODO: Consider using this.
-            //call(intrinsic_fns["print"], [value]);
+            call(intrinsic_fns["print"], [value]);
             break;
     }
     if (!status)
@@ -523,8 +523,9 @@ export function FunctionDef(stream) {
     if (token.tt !== TokenType.RPAREN)
         return parse_error("Missing `)` in fn param list");
     token = stream.next();
-    let rettype = CompoundType.Void();
-    if (token.tt === TokenType.RARROW) {
+    let rettype = Type.Void();
+    if (token.tt === TokenType.COLON) {
+        // Define type of return
         status = TypeExpr(stream, rettype);
         if (!status)
             return false;
@@ -601,13 +602,13 @@ export function ParamList(stream, params) {
         name = token.lexeme;
         token = stream.next();
         if (token.tt === TokenType.COLON) {
-            type = new CompoundType();
+            type = new Type();
             status = TypeExpr(stream, type);
             if (!status)
                 return false;
             token = stream.next();
         } else {
-            type = CompoundType.Any();
+            type = Type.Any();
         }
         params.push(new Param(name, type));
         if (token.tt !== TokenType.COMMA && token.tt !== TokenType.RPAREN)
@@ -766,7 +767,7 @@ export function TypeExpr(stream, typeval) {
             typeval.setVoid();
             return true;
         case TokenType.TArray:
-            let arrtype = new CompoundType();
+            let arrtype = new Type();
             status = ArrayType(stream, arrtype);
             typeval.setArray(arrtype);
             return status;
@@ -776,7 +777,7 @@ export function TypeExpr(stream, typeval) {
             typeval.setObject(keys, types);
             return status;
         case TokenType.TFunction:
-            let paramstypes = [], returntype = new CompoundType();
+            let paramstypes = [], returntype = new Type();
             status = FunctionType(stream, paramstypes, returntype);
             typeval.setFunction(paramstypes, returntype);
             return status;
@@ -817,7 +818,7 @@ export function ObjectType(stream, keys, types) {
         token = stream.next();
         if (token.tt !== TokenType.COLON)
             return parse_error("Expected ':' in obj type expression");
-        let type = new CompoundType();
+        let type = new Type();
         status = TypeExpr(stream, type);
         types.push(type);
         token = stream.next();
@@ -836,7 +837,7 @@ export function FunctionType(stream, paramtypes, returntype) {
     let status;
     if (token.tt === TokenType.LPAREN) {
         while (token.tt !== TokenType.RPAREN) {
-            let type = new CompoundType();
+            let type = new Type();
             status = TypeExpr(stream, type);
             paramtypes.push(type);
             token = stream.next();
