@@ -5,7 +5,11 @@ import {
     add
 } from "./intrinsics.js";
 import { symbolTable } from "./parser.js";
-import { Value } from "./value.js";
+import {
+    Value,
+    CompoundType,
+    Param
+} from "./value.js";
 import { TokenStream } from "./lexer.js";
 import {
     TokenType,
@@ -163,7 +167,7 @@ intrinsic_docs["print"] = {
         "Print arguments' str reprs to the console.",
     ],
     params: [
-        { name: "...args", type: "Any" },
+        new Param("...args", CompoundType.Any()),
     ],
     returns: {},
 };
@@ -197,7 +201,7 @@ function print(args, __log = false, __loc = "ans") {
     line.append(stuff);
     stream.append(line);
 }
-add("print", ["args"], print, false);
+add("print", print, false);
 
 intrinsic_docs["clear"] = {
     desc: [
@@ -209,7 +213,7 @@ intrinsic_docs["clear"] = {
 function clear() {
     stream.innerHTML = "";
 }
-add("clear", [], clear, false);
+add("clear", clear, false);
 
 intrinsic_docs["help"] = {
     desc: [
@@ -229,7 +233,7 @@ function help() {
     for (const msg of msgs)
         print(Value.fromString(msg), true);
 }
-add("help", [], help, false);
+add("help", help, false);
 
 intrinsic_docs["docs"] = {
     desc: [
@@ -237,7 +241,7 @@ intrinsic_docs["docs"] = {
         "functions to the console.",
     ],
     params: [
-        { name: "fn", type: "Function", },
+        new Param("fn", CompoundType.Function()),
     ],
     returns: {},
 };
@@ -268,7 +272,7 @@ function docs(fn) {
         fn_docs.params.forEach(param => {
             const name = param.name;
             const type = param.type;
-            print(Value.fromString(`${tab}${name} : ${highlight(type)}`), true);
+            print(Value.fromString(`${tab}${name} : ${highlight(type.printFmt())}`), true);
         });
 
     // Print returns
@@ -278,7 +282,7 @@ function docs(fn) {
     } else {
         const return_desc = fn_docs.returns.desc;
         const return_type = fn_docs.returns.type;
-        print(Value.fromString(`${tab}${highlight(return_type)} : ${return_desc}`), true);
+        print(Value.fromString(`${tab}${highlight(return_type.printFmt())} : ${return_desc}`), true);
     }
 
     // Print examples if they exist
@@ -288,14 +292,14 @@ function docs(fn) {
             print(Value.fromString(`${tab}${highlight(msg)}`), true);
     }
 }
-add("docs", ["fn"], docs, false);
+add("docs", docs, false);
 
 intrinsic_docs["tutorial"] = {
     desc: [
         "Prints tutorial messages to the console.",
     ],
     params: [
-        { name: "page", type: "Number" },
+        new Param("page", CompoundType.Number()),
     ],
     returns: {},
 };
@@ -308,15 +312,15 @@ function tutorial(page) {
     for (const msg of tutorial_pages[page.Ntemp])
         print(Value.fromString(msg), true);
 }
-add("tutorial", ["page"], tutorial, false);
-add("tut", ["page"], tutorial, false);
+add("tutorial", tutorial, false);
+add("tut", tutorial, false);
 
 intrinsic_docs["goto"] = {
     desc: [
         "Move to a location in the console.",
     ],
     params: [
-        { name: "loc", type: "String" },
+        new Param("loc", CompoundType.String()),
     ],
     returns: {},
 };
@@ -343,8 +347,8 @@ function goto(loc) {
     for (const msg of locations[cur_loc])
         print(Value.fromString(msg), true, cur_loc);
 }
-add("goto", ["loc"], goto, false);
-add("cd", ["loc"], goto, false);
+add("goto", goto, false);
+add("cd", goto, false);
 
 intrinsic_docs["list"] = {
     desc: [
@@ -364,8 +368,8 @@ function list() {
         print(Value.fromString(res), true);
     }
 }
-add("list", [], list, false);
-add("ls", [], list, false);
+add("list", list, false);
+add("ls", list, false);
 
 // Add our CLI intrinsics to the symboltable
 for (const intrinsic in intrinsic_fns)
@@ -375,7 +379,7 @@ const locations = {};
 let cur_loc = "home";
 locations["home"] = [
     "Welcome to the command line!",
-    'Check out my <a href="https://github.com/hahdookin" target="_blank">source code</a>.',
+    'Check out my <a href="https://github.com/hahdookin/hahdookin.github.io" target="_blank">source code</a>.',
     "",
     'Click <a href="../index.html">here</a> for non-interactive site.',
     `Enter ${highlight("help();")} for more information.`,

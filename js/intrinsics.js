@@ -1,9 +1,11 @@
-import { Value, ValType } from "./value.js";
+import {
+    Value,
+    CompoundType,
+    Param
+} from "./value.js";
 
 import { call } from "./parser.js";
-function zip(a1, a2) {
-    return a1.map((e, i) => [e, a2[i]]);
-}
+import { zip } from "./utils.js";
 
 //===========================
 // Intrinsic Functions
@@ -17,18 +19,21 @@ export const intrinsic_fns = {};
 //   desc: String[],
 //   params: {
 //      name: String,
-//      type: String
+//      type: CompoundType
 //   }[],
 //   returns: {
-//      type: String,
+//      type: CompoundType,
 //      desc: String[],
 //   }
 //   example: String[] | undefined
 // }
 export const intrinsic_docs = {};
-export function add(name, args, fn, returns) {
+// export function add(name, params, fn, returns) {
+export function add(name, fn, returns) {
     const fn_val = new Value();
-    fn_val.setFunctionIntrinsic(args, fn, returns);
+    // Params are now defined in the docs, use those
+    const params = intrinsic_docs[name].params;
+    fn_val.setFunctionIntrinsic(params, fn, returns);
     intrinsic_fns[name] = fn_val;
 }
 
@@ -41,10 +46,10 @@ intrinsic_docs["isnumber"] = {
         "Check if a variable is number type",
     ],
     params: [
-        { name: "value", type: "Any" },
+        new Param("value", CompoundType.Any())
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "1 if number, 0 otherwise"
     },
     example: [
@@ -56,17 +61,17 @@ intrinsic_docs["isnumber"] = {
 function isnumber(value) {
     return Value.fromNumber(+(value.isNumber()));
 }
-add("isnumber", ["value"], isnumber, true);
+add("isnumber", isnumber, true);
 
 intrinsic_docs["isstring"] = {
     desc: [
         "Check if a variable is string type",
     ],
     params: [
-        { name: "value", type: "Any" },
+        new Param("value", CompoundType.Any())
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "1 if string, 0 otherwise"
     },
     example: [
@@ -76,17 +81,17 @@ intrinsic_docs["isstring"] = {
 function isstring(value) {
     return Value.fromNumber(+(value.isString()));
 }
-add("isstring", ["value"], isstring, true);
+add("isstring", isstring, true);
 
 intrinsic_docs["isarray"] = {
     desc: [
         "Check if a variable is array type",
     ],
     params: [
-        { name: "value", type: "Any" },
+        new Param("value", CompoundType.Any()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "1 if array, 0 otherwise"
     },
     example: [
@@ -96,17 +101,17 @@ intrinsic_docs["isarray"] = {
 function isarray(value) {
     return Value.fromNumber(+(value.isArray()));
 }
-add("isarray", ["value"], isarray, true);
+add("isarray", isarray, true);
 
 intrinsic_docs["isobject"] = {
     desc: [
         "Check if a variable is object type",
     ],
     params: [
-        { name: "value", type: "Any" },
+        new Param("value", CompoundType.Any()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "1 if object, 0 otherwise"
     },
     example: [
@@ -116,17 +121,17 @@ intrinsic_docs["isobject"] = {
 function isobject(value) {
     return Value.fromNumber(+(value.isObject()));
 }
-add("isobject", ["value"], isobject, true);
+add("isobject", isobject, true);
 
 intrinsic_docs["isfunction"] = {
     desc: [
         "Check if a variable is function type",
     ],
     params: [
-        { name: "value", type: "Any" },
+        new Param("value", CompoundType.Any()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "1 if function, 0 otherwise"
     },
     example: [
@@ -137,7 +142,7 @@ intrinsic_docs["isfunction"] = {
 function isfunction(value) {
     return Value.fromNumber(+(value.isFunction()));
 }
-add("isfunction", ["value"], isfunction, true);
+add("isfunction", isfunction, true);
 
 
 
@@ -149,8 +154,8 @@ intrinsic_docs["push"] = {
         "Pushes a value to the end of an array.",
     ],
     params: [
-        { name: "arr", type: "Array" },
-        { name: "val", type: "Any" },
+        new Param("arr", CompoundType.Array()),
+        new Param("val", CompoundType.Any()),
     ],
     returns: {},
     example: [
@@ -162,7 +167,7 @@ intrinsic_docs["push"] = {
 function push(arr, val) {
     arr.addArrayValue(val);
 }
-add("push", ["arr", "val"], push, false);
+add("push", push, false);
 
 intrinsic_docs["pop"] = {
     desc: [
@@ -170,10 +175,10 @@ intrinsic_docs["pop"] = {
         "an array and return it.",
     ],
     params: [
-        { name: "arr", type: "Array" },
+        new Param("arr", CompoundType.Array()),
     ],
     returns: {
-        type: "Any",
+        type: CompoundType.Any(),
         desc: "Value popped"
     },
     example: [
@@ -185,7 +190,7 @@ intrinsic_docs["pop"] = {
 function pop(arr) {
     return arr.Atemp.pop();
 }
-add("pop", ["arr"], pop, true);
+add("pop", pop, true);
 
 intrinsic_docs["dequeue"] = {
     desc: [
@@ -193,10 +198,10 @@ intrinsic_docs["dequeue"] = {
         "an array and return it.",
     ],
     params: [
-        { name: "arr", type: "Array" },
+        new Param("arr", CompoundType.Array()),
     ],
     returns: {
-        type: "Any",
+        type: CompoundType.Any(),
         desc: "Value dequeued"
     },
     example: [
@@ -208,17 +213,17 @@ intrinsic_docs["dequeue"] = {
 function dequeue(arr) {
     return arr.Atemp.shift();
 }
-add("dequeue", ["arr"], dequeue, true);
+add("dequeue", dequeue, true);
 
 intrinsic_docs["len"] = {
     desc: [
         "Returns the length of the iterable.",
     ],
     params: [
-        { name: "list", type: "Array | String" },
+        new Param("list", CompoundType.Array()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "Amount of items in list"
     },
     example: [
@@ -236,7 +241,7 @@ function len(list) {
         return val;
     }
 }
-add("len", ["list"], len, true);
+add("len", len, true);
 
 intrinsic_docs["concat"] = {
     desc: [
@@ -244,11 +249,11 @@ intrinsic_docs["concat"] = {
         "the concatenation of two.",
     ],
     params: [
-        { name: "s1", type: "String | Array" },
-        { name: "s2", type: "String | Array" },
+        new Param("s1", CompoundType.String()),
+        new Param("s2", CompoundType.String()),
     ],
     returns: {
-        type: "String",
+        type: CompoundType.String(),
         desc: "Concatenation of s1 and s2"
     },
     example: [
@@ -265,18 +270,18 @@ function concat(s1, s2) {
     }
     return val;
 }
-add("concat", ["s1", "s2"], concat, true);
+add("concat", concat, true);
 
 intrinsic_docs["zip"] = {
     desc: [
         "Zips two arrays together into a new one."
     ],
     params: [
-        { name: "a1", type: "Array" },
-        { name: "a2", type: "Array" },
+        new Param("a1", CompoundType.Array()),
+        new Param("a2", CompoundType.Array()),
     ],
     returns: {
-        type: "Array [Array]",
+        type: CompoundType.Array(CompoundType.Array()),
         desc: "index 0 contains [a1[0], a2[0]], and so on"
     },
     example: [
@@ -293,10 +298,10 @@ intrinsic_docs["deepcopy"] = {
         "recursively.",
     ],
     params: [
-        { name: "src", type: "Array" },
+        new Param("src", CompoundType.Array()),
     ],
     returns: {
-        type: "Array",
+        type: CompoundType.Array(),
         desc: "deep copy of src"
     },
 };
@@ -310,7 +315,7 @@ function deepcopy(src) {
     }
     return Value.fromArray(res);
 }
-add("deepcopy", ["src"], deepcopy, true);
+add("deepcopy", deepcopy, true);
 
 intrinsic_docs["shallowcopy"] = {
     desc: [
@@ -318,10 +323,10 @@ intrinsic_docs["shallowcopy"] = {
         "(no top-level references) of an another array.",
     ],
     params: [
-        { name: "src", type: "Array" },
+        new Param("src", CompoundType.Array()),
     ],
     returns: {
-        type: "Array",
+        type: CompoundType.Array(),
         desc: "shallow copy of src"
     },
 };
@@ -331,7 +336,7 @@ function shallowcopy(src) {
         res.push(Value.from(val));
     return Value.fromArray(res);
 }
-add("shallowcopy", ["src"], shallowcopy, true);
+add("shallowcopy", shallowcopy, true);
 
 intrinsic_docs["filter"] = {
     desc: [
@@ -339,11 +344,14 @@ intrinsic_docs["filter"] = {
         "by a predicate."
     ],
     params: [
-        { name: "arr", type: "Array" },
-        { name: "f",  type: "Function (Any)" }
+        new Param("arr", CompoundType.Array()),
+        new Param("f", CompoundType.Function(
+            [CompoundType.Any()],
+            CompoundType.Number()
+        )),
     ],
     returns: {
-        type: "Array",
+        type: CompoundType.Array(),
         desc: "arr with all elements where f(arr[i]) is true"
     },
     example: [
@@ -362,7 +370,7 @@ function filter(arr, f) {
     }
     return value;
 }
-add("filter", ["arr", "f"], filter, true);
+add("filter", filter, true);
 
 intrinsic_docs["map"] = {
     desc: [
@@ -370,11 +378,14 @@ intrinsic_docs["map"] = {
         "element mapped by a function."
     ],
     params: [
-        { name: "arr", type: "Array" },
-        { name: "f",  type: "Function (Any)" }
+        new Param("arr", CompoundType.Array()),
+        new Param("f", CompoundType.Function(
+            [CompoundType.Any()],
+            CompoundType.Any()
+        )),
     ],
     returns: {
-        type: "Array",
+        type: CompoundType.Array(),
         desc: "arr where all elements are f(arr[i])"
     },
     example: [
@@ -391,7 +402,7 @@ function map(arr, f) {
     }
     return value;
 }
-add("map", ["arr", "f"], map, true);
+add("map", map, true);
 
 intrinsic_docs["reverse"] = {
     desc: [
@@ -399,10 +410,10 @@ intrinsic_docs["reverse"] = {
         "element in reverse order."
     ],
     params: [
-        { name: "arr", type: "Array" },
+        new Param("arr", CompoundType.Array()),
     ],
     returns: {
-        type: "Array",
+        type: CompoundType.Array(),
         desc: "reversed array"
     },
     example: [
@@ -418,15 +429,18 @@ function reverse(arr) {
     }
     return value;
 };
-add("reverse", ["arr"], reverse, true);
+add("reverse", reverse, true);
 
 intrinsic_docs["foreach"] = {
     desc: [
         "Calls a function on each element of an array",
     ],
     params: [
-        { name: "arr", type: "Array" },
-        { name: "f",  type: "Function (Any)" }
+        new Param("arr", CompoundType.Array()),
+        new Param("f", CompoundType.Function(
+            [CompoundType.Any()],
+            CompoundType.Void()
+        )),
     ],
     returns: {},
     example: [
@@ -440,7 +454,7 @@ function foreach(arr, f) {
     for (const val of arr.Atemp)
         call(f, [val]);
 }
-add("foreach", ["arr", "f"], foreach, false);
+add("foreach", foreach, false);
 
 intrinsic_docs["reduce"] = {
     desc: [
@@ -448,11 +462,14 @@ intrinsic_docs["reduce"] = {
         "accumulator function."
     ],
     params: [
-        { name: "arr", type: "Array" },
-        { name: "f",  type: "Function (Any, Any)" }
+        new Param("arr", CompoundType.Array()),
+        new Param("f", CompoundType.Function(
+            [CompoundType.Any(), CompoundType.Any()],
+            CompoundType.Any()
+        )),
     ],
     returns: {
-        type: "Any",
+        type: CompoundType.Any(),
         desc: "Value accumulated by accumulator."
     },
     example: [
@@ -472,18 +489,18 @@ function reduce(arr, f) {
     }
     return accum;
 }
-add("reduce", ["arr", "f"], reduce, true);
+add("reduce", reduce, true);
 
 intrinsic_docs["range"] = {
     desc: [
         "Creates a range from a start and stop"
     ],
     params: [
-        { name: "start", type: "Number" },
-        { name: "stop",  type: "Number" }
+        new Param("start", CompoundType.Number()),
+        new Param("stop", CompoundType.Number()),
     ],
     returns: {
-        type: "Array [Number]",
+        type: CompoundType.Array(CompoundType.Number()),
         desc: "Sequence of the range"
     },
     //example: [ ]
@@ -496,7 +513,7 @@ function range(start, stop) {
     }
     return value;
 }
-add("range", ["start", "stop"], range, true);
+add("range", range, true);
 
 //===========================
 // Object library
@@ -506,10 +523,10 @@ intrinsic_docs["keys"] = {
         "Return an array of keys from an object.",
     ],
     params: [
-        { name: "obj", type: "Object" },
+        new Param("obj", CompoundType.Object()),
     ],
     returns: {
-        type: "Array [String]",
+        type: CompoundType.Array(CompoundType.String()),
         desc: "Array with all keys in the obj."
     },
     example: [
@@ -523,17 +540,17 @@ function keys(obj) {
     });
     return res;
 }
-add("keys", ["obj"], keys, true);
+add("keys", keys, true);
 
 intrinsic_docs["values"] = {
     desc: [
         "Return an array of values from an object.",
     ],
     params: [
-        { name: "obj", type: "Object" },
+        new Param("obj", CompoundType.Object()),
     ],
     returns: {
-        type: "Array",
+        type: CompoundType.Array(),
         desc: "Array with all values in the obj."
     },
     example: [
@@ -547,17 +564,20 @@ function values(obj) {
     });
     return res;
 }
-add("values", ["obj"], values, true);
+add("values", values, true);
 
 intrinsic_docs["entries"] = {
     desc: [
         "Return an array of key/value pairs from an object.",
     ],
     params: [
-        { name: "obj", type: "Object" },
+        new Param("obj", CompoundType.Object()),
     ],
     returns: {
-        type: "Array [Object {key: String, value: Any}]",
+        type: CompoundType.Array(CompoundType.Object(
+            ["key", "value"],
+            [CompoundType.String(), CompoundType.Any()]
+        )),
         desc: "Array of objects of key/value pairs.",
     },
     example: [
@@ -576,7 +596,7 @@ function entries(obj) {
     }
     return res;
 }
-add("entries", ["obj"], entries, true);
+add("entries", entries, true);
 
 
 //===========================
@@ -587,7 +607,7 @@ intrinsic_docs["print"] = {
         "Prints arguments' str reps to stdout.",
     ],
     params: [
-        { name: "...args", type: "Any" },
+        new Param("...args", CompoundType.Any()),
     ],
     returns: {},
 };
@@ -595,15 +615,15 @@ intrinsic_docs["print"] = {
 function print(args) {
     console.log(args.printFmt());
 }
-add("print", ["args"], print, false);
+add("print", print, false);
 
 intrinsic_docs["assert"] = {
     desc: [
         "Assert a condition, print message if condition is 0.",
     ],
     params: [
-        { name: "expr", type: "Number" },
-        { name: "msg", type: "String" },
+        new Param("expr", CompoundType.Number()),
+        new Param("msg", CompoundType.String()),
     ],
     returns: {},
 };
@@ -611,31 +631,55 @@ function assert(expr, msg) {
     if (!expr.Ntemp)
         console.error(msg.Stemp);
 }
-add("assert", ["expr", "msg"], assert, false);
+add("assert", assert, false);
 
+// TODO: Document
 // TIMER FNS
-function timerstart() {
-    return Value.fromNumber(Date.now());
-}
-add("timerstart", [], timerstart, true);
-function timerend(timer) {
-    print(Value.fromString("" + (Date.now() - timer.Ntemp) + "ms"))
-}
-add("timerend", ["timer"], timerend, false);
+// function timerstart() {
+//     return Value.fromNumber(Date.now());
+// }
+// add("timerstart", timerstart, true);
+// function timerend(timer) {
+//     print(Value.fromString("" + (Date.now() - timer.Ntemp) + "ms"))
+// }
+// add("timerend", timerend, false);
 
 //===========================
 // String library
 //===========================
+
+intrinsic_docs["str"] = {
+    desc: [
+        "Return the string representation of a data type.",
+    ],
+    params: [
+        new Param("val", CompoundType.Any()),
+    ],
+    returns: {
+        type: CompoundType.String(),
+        desc: "String representation of val"
+    },
+    example: [
+        'str(5); # "5"',
+        'str(fn(){}) # "fn ( ) { }"',
+        'str([1, 2, 3]); # "[1, 2, 3]"'
+    ]
+};
+function str(val) {
+    return Value.fromString(val.printFmt());
+}
+add("str", str, true);
+
 intrinsic_docs["repeat"] = {
     desc: [
         "Creates a string repeated n times.",
     ],
     params: [
-        { name: "str", type: "String" },
-        { name: "n", type: "Number" },
+        new Param("str", CompoundType.String()),
+        new Param("n", CompoundType.Number()),
     ],
     returns: {
-        type: "String",
+        type: CompoundType.String(),
         desc: "str concated with itself n times"
     },
     example: [
@@ -645,19 +689,19 @@ intrinsic_docs["repeat"] = {
 function repeat(str, n) {
     return Value.fromString(str.Stemp.repeat(n.Ntemp));
 }
-add("repeat", ["str", "n"], repeat, true);
+add("repeat", repeat, true);
 
 intrinsic_docs["substring"] = {
     desc: [
         "Creates a substring of a string with given indices.",
     ],
     params: [
-        { name: "str", type: "String" },
-        { name: "start", type: "Number" },
-        { name: "end", type: "Number" },
+        new Param("str", CompoundType.String()),
+        new Param("start", CompoundType.Number()),
+        new Param("end", CompoundType.Number()),
     ],
     returns: {
-        type: "String",
+        type: CompoundType.String(),
         desc: "substring of str of [start, end)"
     },
     example: [
@@ -669,18 +713,18 @@ function substring(str, start, end) {
         str.Stemp.substring(start.Ntemp, end.Ntemp)
     );
 }
-add("substring", ["str", "start", "end"], substring, true);
+add("substring", substring, true);
 
 intrinsic_docs["strcmp"] = {
     desc: [
         "Compares strings using C style string comparison.",
     ],
     params: [
-        { name: "s1", type: "String" },
-        { name: "s2", type: "String" },
+        new Param("s1", CompoundType.String()),
+        new Param("s2", CompoundType.String()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "C style string comparison"
     },
     example: [
@@ -698,18 +742,18 @@ function strcmp(s1, s2) {
     else if (s1.Stemp === s2.Stemp) n = 0;
     return Value.fromNumber(n);
 }
-add("strcmp", ["s1", "s2"], strcmp, true);
+add("strcmp", strcmp, true);
 
 intrinsic_docs["streq"] = {
     desc: [
         "Test if strings are equal.",
     ],
     params: [
-        { name: "s1", type: "String" },
-        { name: "s2", type: "String" },
+        new Param("s1", CompoundType.String()),
+        new Param("s2", CompoundType.String()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "1 if strings are equal, 0 otherwise"
     },
     example: [
@@ -720,17 +764,17 @@ intrinsic_docs["streq"] = {
 function streq(s1, s2) {
     return Value.fromNumber(+(s1.Stemp === s2.Stemp));
 }
-add("streq", ["s1", "s2"], streq, true);
+add("streq", streq, true);
 
 intrinsic_docs["tolower"] = {
     desc: [
         "Create a string with all lowercase letters.",
     ],
     params: [
-        { name: "str", type: "String" },
+        new Param("str", CompoundType.String()),
     ],
     returns: {
-        type: "String",
+        type: CompoundType.String(),
         desc: "str with all uppercase letter as lowercase"
     },
     example: [
@@ -740,17 +784,17 @@ intrinsic_docs["tolower"] = {
 function tolower(str) {
     return Value.fromString(str.Stemp.toLowerCase());
 }
-add("tolower", ["str"], tolower, true);
+add("tolower", tolower, true);
 
 intrinsic_docs["toupper"] = {
     desc: [
         "Create a string with all uppercase letters.",
     ],
     params: [
-        { name: "str", type: "String" },
+        new Param("str", CompoundType.String()),
     ],
     returns: {
-        type: "String",
+        type: CompoundType.String(),
         desc: "str with all lowercase letter as uppercase"
     },
     example: [
@@ -760,7 +804,7 @@ intrinsic_docs["toupper"] = {
 function toupper(str) {
     return Value.fromString(str.Stemp.toUpperCase());
 }
-add("toupper", ["str"], toupper, true);
+add("toupper", toupper, true);
 
 //===========================
 // Math library
@@ -771,119 +815,119 @@ intrinsic_docs["sin"] = {
         "Returns the sine of n in radians",
     ],
     params: [
-        { name: "n", type: "Number" },
+        new Param("n", CompoundType.Number()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "sine of n in radians"
     },
 };
 function sin(n) {
     return Value.fromNumber(Math.sin(n.Ntemp));
 }
-add("sin", ["n"], sin, true);
+add("sin", sin, true);
 
 intrinsic_docs["cos"] = {
     desc: [
         "Returns the cosine of n in radians",
     ],
     params: [
-        { name: "n", type: "Number" },
+        new Param("n", CompoundType.Number()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "cosine of n in radians"
     },
 };
 function cos(n) {
     return Value.fromNumber(Math.cos(n.Ntemp));
 }
-add("cos", ["n"], cos, true);
+add("cos", cos, true);
 
 intrinsic_docs["tan"] = {
     desc: [
         "Returns the tangent of n in radians",
     ],
     params: [
-        { name: "n", type: "Number" },
+        new Param("n", CompoundType.Number()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "tangent of n in radians"
     },
 };
 function tan(n) {
     return Value.fromNumber(Math.tan(n.Ntemp));
 }
-add("tan", ["n"], tan, true);
+add("tan", tan, true);
 
 intrinsic_docs["asin"] = {
     desc: [
         "Returns the arcsine of n",
     ],
     params: [
-        { name: "n", type: "Number" },
+        new Param("n", CompoundType.Number()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "arcsine of n"
     },
 };
 function asin(n) {
     return Value.fromNumber(Math.asin(n.Ntemp));
 }
-add("asin", ["n"], asin, true);
+add("asin", asin, true);
 
 intrinsic_docs["acos"] = {
     desc: [
         "Returns the arccosine of n",
     ],
     params: [
-        { name: "n", type: "Number" },
+        new Param("n", CompoundType.Number()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "arccosine of n"
     },
 };
 function acos(n) {
     return Value.fromNumber(Math.acos(n.Ntemp));
 }
-add("acos", ["n"], acos, true);
+add("acos", acos, true);
 
 intrinsic_docs["atan"] = {
     desc: [
         "Returns the arctangent of n",
     ],
     params: [
-        { name: "n", type: "Number" },
+        new Param("n", CompoundType.Number()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "arctangent of n"
     },
 };
 function atan(n) {
     return Value.fromNumber(Math.atan(n.Ntemp));
 }
-add("atan", ["n"], atan, true);
+add("atan", atan, true);
 
 intrinsic_docs["ln"] = {
     desc: [
         "Returns the natural log of n",
     ],
     params: [
-        { name: "n", type: "Number" },
+        new Param("n", CompoundType.Number()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "Natural log of n"
     },
 };
 function ln(n) {
     return Value.fromNumber(Math.log(n.Ntemp));
 }
-add("ln", ["n"], ln, true);
+add("ln", ln, true);
 
 intrinsic_docs["rand"] = {
     desc: [
@@ -891,25 +935,25 @@ intrinsic_docs["rand"] = {
     ],
     params: [],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "Random float in range [0, 1)"
     }
 };
 function rand() {
     return Value.fromNumber(Math.random());
 }
-add("rand", [], rand, true);
+add("rand", rand, true);
 
 intrinsic_docs["randint"] = {
     desc: [
         "Returns a random integer between a specified range",
     ],
     params: [
-        { name: "lower", type: "Number" },
-        { name: "upper", type: "Number" },
+        new Param("lower", CompoundType.Number()),
+        new Param("upper", CompoundType.Number()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "Random integer in range [lower, upper)"
     }
 };
@@ -919,156 +963,156 @@ function randint(lower, upper) {
         Math.floor(l + Math.random() * (u - l))
     );
 }
-add("randint", ["lower", "upper"], randint, true);
+add("randint", randint, true);
 
 intrinsic_docs["floor"] = {
     desc: [
         "Returns the floor of a float",
     ],
     params: [
-        { name: "n", type: "Number" },
+        new Param("n", CompoundType.Number()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "n rounded down to nearest integer"
     },
 };
 function floor(n) {
     return Value.fromNumber(Math.floor(n.Ntemp));
 }
-add("floor", ["n"], floor, true);
+add("floor", floor, true);
 
 intrinsic_docs["ceil"] = {
     desc: [
         "Returns the ceil of a float",
     ],
     params: [
-        { name: "n", type: "Number" },
+        new Param("n", CompoundType.Number()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "n rounded down to nearest integer"
     },
 };
 function ceil(n) {
     return Value.fromNumber(Math.ceil(n.Ntemp));
 }
-add("ceil", ["n"], ceil, true);
+add("ceil", ceil, true);
 
 intrinsic_docs["round"] = {
     desc: [
         "Returns n rounded to nearest integer",
     ],
     params: [
-        { name: "n", type: "Number" },
+        new Param("n", CompoundType.Number()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "n rounded to nearest integer"
     },
 };
 function round(n) {
     return Value.fromNumber(Math.round(n.Ntemp));
 }
-add("round", ["n"], round, true);
+add("round", round, true);
 
 intrinsic_docs["sqrt"] = {
     desc: [
         "Returns the square root of a number",
     ],
     params: [
-        { name: "n", type: "Number" },
+        new Param("n", CompoundType.Number()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "square root of n"
     },
 };
 function sqrt(n) {
     return Value.fromNumber(Math.sqrt(n.Ntemp));
 }
-add("sqrt", ["n"], sqrt, true);
+add("sqrt", sqrt, true);
 
 intrinsic_docs["abs"] = {
     desc: [
         "Returns the absolute value of a number",
     ],
     params: [
-        { name: "n", type: "Number" },
+        new Param("n", CompoundType.Number()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "absolute value of n"
     },
 };
 function abs(n) {
     return Value.fromNumber(Math.abs(n.Ntemp));
 }
-add("abs", ["n"], abs, true);
+add("abs", abs, true);
 
 intrinsic_docs["sign"] = {
     desc: [
         "Returns a number denoting the sign of a number",
     ],
     params: [
-        { name: "n", type: "Number" },
+        new Param("n", CompoundType.Number()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "-1 if n < 0, 0 if n is 0, otherwise 1"
     },
 };
 function sign(n) {
     return Value.fromNumber(Math.sign(n.Ntemp));
 }
-add("sign", ["n"], sign, true);
+add("sign", sign, true);
 
 intrinsic_docs["exp"] = {
     desc: [
         "Returns e (euler's constant) raised to the power of a number",
     ],
     params: [
-        { name: "n", type: "Number" },
+        new Param("n", CompoundType.Number()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "e (euler's constant) raised to the power of n"
     },
 };
 function exp(n) {
     return Value.fromNumber(Math.exp(n.Ntemp));
 }
-add("exp", ["n"], exp, true);
+add("exp", exp, true);
 
 intrinsic_docs["pow"] = {
     desc: [
         "Returns a number raised to the power of another number",
     ],
     params: [
-        { name: "n", type: "Number" },
-        { name: "x", type: "Number" },
+        new Param("n", CompoundType.Number()),
+        new Param("x", CompoundType.Number()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "n raised to the power of n"
     },
 };
 function pow(n, x) {
     return Value.fromNumber(Math.pow(n.Ntemp, x.Ntemp));
 }
-add("pow", ["n", "x"], pow, true);
+add("pow", pow, true);
 
 intrinsic_docs["clamp"] = {
     desc: [
         "Returns a number clamped between a min and a max",
     ],
     params: [
-        { name: "n", type: "Number" },
-        { name: "min", type: "Number" },
-        { name: "max", type: "Number" },
+        new Param("n", CompoundType.Number()),
+        new Param("min", CompoundType.Number()),
+        new Param("max", CompoundType.Number()),
     ],
     returns: {
-        type: "Number",
+        type: CompoundType.Number(),
         desc: "n clamped between min and max"
     },
 };
@@ -1078,5 +1122,5 @@ function clamp(n, min, max) {
     else if (res > max.Ntemp) res = max.Ntemp;
     return Value.fromNumber(res);
 }
-add("clamp", ["n", "min", "max"], clamp, true);
+add("clamp", clamp, true);
 

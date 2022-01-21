@@ -87,7 +87,9 @@ export class TokenType {
     static TArray     = 78;
     static TObject    = 79;
     static TFunction  = 80;
-    static END        = 81;
+    static TAny       = 81;
+    static TVoid      = 82;
+    static END        = 83;
 }
 
 export function token_type_str(tt) {
@@ -247,6 +249,20 @@ export function token_type_str(tt) {
         return "ELLIPSIS";
     if (tt == TokenType.END)
         return "END";
+    if (tt == TokenType.TNumber)
+        return "TNumber";
+    if (tt == TokenType.TString)
+        return "TString";
+    if (tt == Token.TArray)
+        return "TArray";
+    if (tt == Token.TObject)
+        return "TObject";
+    if (tt == Token.TFunction)
+        return "TFunction";
+    if (tt == Token.TAny)
+        return "TAny";
+    if (tt == Token.TVoid)
+        return "TVoid";
     return "none";
 }
 
@@ -368,8 +384,10 @@ keywords.insert("typeof", TokenType.TYPEOF);
 keywords.insert("typedef", TokenType.TYPEDEF);
 
 // All recongized types
-types.insert("Number");
-types.insert("String");
-types.insert("Array");
-types.insert("Object");
-types.insert("Function");
+types.insert("Any", TokenType.TAny);
+types.insert("Number", TokenType.TNumber);
+types.insert("String", TokenType.TString);
+types.insert("Array", TokenType.TArray);
+types.insert("Object", TokenType.TObject);
+types.insert("Function", TokenType.TFunction);
+types.insert("Void", TokenType.TVoid);
