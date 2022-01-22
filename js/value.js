@@ -1,9 +1,6 @@
 import { TokenStream } from "./lexer.js";
 import { zip } from "./utils.js";
-import {
-    ValType,
-    Type
-} from "./type.js";
+import { Type } from "./type.js";
 
 export class Param {
     /**
@@ -16,9 +13,18 @@ export class Param {
     }
 }
 
+/**
+ * @property {Type} type
+ * @property {Boolean} constant
+ * @property {Number} Ntemp
+ * @property {String} Stemp
+ * @property {Value[]} Atemp
+ * @property {Object} Otemp
+ * @property {Object} Ftemp
+ */
 export class Value {
     constructor() {
-        this.vt = ValType.None;
+        this.type = Type.None();
         this.constant = false;
 
         this.Ntemp = null;
@@ -31,7 +37,7 @@ export class Value {
     // Factories
     static from(other) {
         let res = new Value();
-        res.vt = other.vt;
+        res.type = other.type;
         res.Ntemp = other.Ntemp;
         res.Stemp = other.Stemp;
         res.Atemp = other.Atemp;
@@ -41,31 +47,20 @@ export class Value {
     }
     static fromNumber(n) {
         let res = new Value();
-        res.vt = ValType.Number;
+        res.type = Type.Number();
         res.Ntemp = n;
-        res.Stemp = null;
-        res.Atemp = null;
-        res.Otemp = null;
-        res.Ftemp = null;
         return res;
     }
     static fromString(s) {
         let res = new Value();
-        res.vt = ValType.String;
-        res.Ntemp = null;
+        res.type = Type.String();
         res.Stemp = s;
-        res.Atemp = null;
-        res.Otemp = null;
-        res.Ftemp = null;
         return res;
     }
-    static fromFunction(tokens, params, ident) {
+    static fromFunction(tokens, params, rettype, ident) {
         let res = new Value();
-        res.vt = ValType.Function;
-        res.Ntemp = null;
-        res.Stemp = null;
-        res.Atemp = null;
-        res.Otemp = null;
+        res.type = Type.Function(params.map(p => p.type), rettype);
+        console.log(res.type.printFmt());
         res.Ftemp = {};
         res.Ftemp.tokens = tokens;
         res.Ftemp.params = params;
@@ -75,22 +70,14 @@ export class Value {
     }
     static fromArray(a) {
         let res = new Value();
-        res.vt = ValType.Array;
-        res.Ntemp = null;
-        res.Stemp = null;
+        res.type = Type.Array();
         res.Atemp = a;
-        res.Otemp = null;
-        res.Ftemp = null;
         return res;
     }
     static fromObject(o) {
         let res = new Value();
-        res.vt = ValType.Object;
-        res.Ntemp = null;
-        res.Stemp = null;
-        res.Atemp = null;
+        res.type = Type.Object();
         res.Otemp = o;
-        res.Ftemp = null;
         return res;
     }
 
@@ -107,30 +94,30 @@ export class Value {
     }
 
     setNumber(n) {
-        this.vt = ValType.Number;
+        this.type = Type.Number();
         this.Ntemp = n;
     }
     setString(s) {
-        this.vt = ValType.String;
+        this.type = Type.String();
         this.Stemp = s;
     }
     setArray(a) {
-        this.vt = ValType.Array;
+        this.type = Type.Array();
         this.Atemp = a;
     }
     setObject(o) {
-        this.vt = ValType.Object;
+        this.type = Type.Object();
         this.Otemp = o;
     }
     setFunction(tokens, params, name) {
-        this.vt = ValType.Function;
+        this.type = Type.Function(params.map(p => p.type));
         this.Ftemp = {};
         this.Ftemp.tokens = tokens;
         this.Ftemp.params = params;
         this.Ftemp.name = name;
     }
     setFunctionIntrinsic(params, fn, returns) {
-        this.vt = ValType.Function;
+        this.type = Type.Function();
         this.Ftemp = {};
         this.Ftemp.tokens = null;
         this.Ftemp.params = params;
@@ -140,7 +127,7 @@ export class Value {
     }
 
     setFromValue(other) {
-        this.vt = other.vt;
+        this.type = other.type;
         this.Ntemp = other.Ntemp;
         this.Stemp = other.Stemp;
         this.Atemp = other.Atemp;
@@ -187,19 +174,19 @@ export class Value {
         return Object.keys(this.Otemp).includes(key);
     }
     indexable() {
-        switch (this.vt) {
-            case ValType.String:
-            case ValType.Array:
-            case ValType.Object:
+        switch (this.type) {
+            case Type.String():
+            case Type.Array():
+            case Type.Object():
                 return true;
         }
         return false;
     }
     iterable() {
-        switch (this.vt) {
-            case ValType.String:
-            case ValType.Array:
-            case ValType.Object:
+        switch (this.type) {
+            case Type.String():
+            case Type.Array():
+            case Type.Object():
                 return true;
         }
         return false;
@@ -209,40 +196,25 @@ export class Value {
     }
 
     isNone() {
-        return this.vt === ValType.None;
+        return this.type.equals(Type.None());
     }
     isNumber() {
-        return this.vt === ValType.Number;
+        return this.type.equals(Type.Number());
     }
     isString() {
-        return this.vt === ValType.String;
+        return this.type.equals(Type.String());
     }
     isArray() {
-        return this.vt === ValType.Array;
+        return this.type.equals(Type.Array());
     }
     isObject() {
-        return this.vt === ValType.Object;
+        return this.type.equals(Type.Object());
     }
     isFunction() {
-        return this.vt === ValType.Function;
+        return this.type.equals(Type.Function());
     }
     typeStr() {
-        switch (this.vt) {
-            case ValType.None:
-                return "none";
-            case ValType.Number:
-                return "number";
-            case ValType.String:
-                return "string";
-            case ValType.Bool:
-                return "bool";
-            case ValType.Array:
-                return "array";
-            case ValType.Object:
-                return "object";
-            case ValType.Function:
-                return "function";
-        }
+        return this.type.printFmt();
     }
 
     printFmt(quoted = false) {
@@ -261,6 +233,9 @@ export class Value {
         }
         if (this.isArray()) {
             let res = "[";
+            // res += this.Atemp.map(v => {
+            //     return v.printFmt(v.isString());
+            // }).join(", ");
             for (let [i, val] of this.Atemp.entries()) {
                 if (val.isString())
                     res += val.printFmt(true);

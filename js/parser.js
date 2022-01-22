@@ -225,7 +225,8 @@ export function Stmt(stream) {
             status = Expr(stream, value);
             // This line below makes the interpreter
             // more interactive. TODO: Consider using this.
-            call(intrinsic_fns["print"], [value]);
+            if (!fnState.in_function)
+                call(intrinsic_fns["print"], [value]);
             break;
     }
     if (!status)
@@ -539,7 +540,7 @@ export function FunctionDef(stream) {
     // Don't save the closing '}'.
     let tokens_read = [];
     readTillBlockEnd(stream, tokens_read);
-    let val = Value.fromFunction(tokens_read, params, ident);
+    let val = Value.fromFunction(tokens_read, params, rettype, ident);
     symbolTable.add(ident, val);
     return true;
 }

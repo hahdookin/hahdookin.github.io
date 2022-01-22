@@ -1,16 +1,5 @@
 import { zip } from "./utils.js";
 
-export class ValType {
-    static None = 0;
-    static Number = 1;
-    static String = 2;
-    static Array = 3;
-    static Object = 4;
-    static Function = 5;
-    static Any = 6;
-    static Void = 7;
-}
-
 // Base -> Number
 //       | String
 //       | Any
@@ -22,6 +11,14 @@ export class ValType {
 // ObjectType   -> Object{ident: Base{, ident: Base}*}
 // FunctionType -> Function{(Base{, Base}*)}{: Base}
 export class Type {
+    static VTNone = 0;
+    static VTNumber = 1;
+    static VTString = 2;
+    static VTArray = 3;
+    static VTObject = 4;
+    static VTFunction = 5;
+    static VTAny = 6;
+    static VTVoid = 7;
     /**
      * @param {ValType} vt
      */
@@ -47,21 +44,23 @@ export class Type {
         this.params = other.params;
         this.return = other.return;
     }
-    static Number() { return new Type(ValType.Number); }
-    static String() { return new Type(ValType.String); }
-    static Any()    { return new Type(ValType.Any); }
-    static Void()   { return new Type(ValType.Void); }
-    setNumber() { this.vt = ValType.Number; }
-    setString() { this.vt = ValType.String; }
-    setAny()    { this.vt = ValType.Any; }
-    setVoid()   { this.vt = ValType.Void; }
+    static None()   { return new Type(Type.VTNone);   }
+    static Number() { return new Type(Type.VTNumber); }
+    static String() { return new Type(Type.VTString); }
+    static Any()    { return new Type(Type.VTAny);    }
+    static Void()   { return new Type(Type.VTVoid);   }
+    setNone()   { this.vt = Type.VTNone;   }
+    setNumber() { this.vt = Type.VTNumber; }
+    setString() { this.vt = Type.VTString; }
+    setAny()    { this.vt = Type.VTAny;    }
+    setVoid()   { this.vt = Type.VTVoid;   }
 
     /**
      * @param {Type} arraytype
      * @param {number} length
      */
     static Array(arraytype, length=-1)  {
-        let type = new Type(ValType.Array);
+        let type = new Type(Type.VTArray);
         type.arraytype = arraytype ?? Type.Any();
         type.length = length;
         return type;
@@ -70,7 +69,7 @@ export class Type {
      * @param {Type} arraytype
      */
     setArray(arraytype, length=-1) {
-        this.vt = ValType.Array;
+        this.vt = Type.VTArray;
         this.arraytype = arraytype;
         this.length = length;
     }
@@ -79,7 +78,7 @@ export class Type {
      * @param {Type[]} types
      */
     static Object(keys, types)  {
-        let type = new Type(ValType.Object);
+        let type = new Type(Type.VTObject);
         if (!keys && !types) {
             type.obj = {};
             return type;
@@ -95,7 +94,7 @@ export class Type {
      * @param {Type[]} types
      */
     setObject(keys, types) {
-        this.vt = ValType.Object;
+        this.vt = Type.VTObject;
         this.obj = {};
         for (let [key, type] of zip(keys, types))
             this.obj[key] = type;
@@ -105,7 +104,7 @@ export class Type {
      * @param {Type} returntype
      */
     static Function(paramtypes, returntype)  {
-        let type = new Type(ValType.Function);
+        let type = new Type(Type.VTFunction);
         type.params = paramtypes ?? [];
         type.return = returntype ?? Type.Void();
         return type;
@@ -115,40 +114,42 @@ export class Type {
      * @param {Type} returntype
      */
     setFunction(paramtypes, returntype) {
-        this.vt = ValType.Function;
+        this.vt = Type.VTFunction;
         this.params = paramtypes;
         this.return = returntype;
     }
     printFmt() {
         let res = "";
         switch (this.vt) {
-            case ValType.Any:
+            case Type.VTAny:
                 res += "Any";
                 break;
-            case ValType.Number:
+            case Type.VTNumber:
                 res += "Number";
                 break;
-            case ValType.String:
+            case Type.VTString:
                 res += "String";
                 break;
-            case ValType.Void:
+            case Type.VTVoid:
                 res += "Void";
                 break;
-            case ValType.Array:
+            case Type.VTArray:
                 res += "Array";
                 res += "[";
                 res += this.arraytype.printFmt();
                 res += "]";
                 break;
-            case ValType.Object:
+            case Type.VTObject:
                 res += "Object";
                 if (Object.keys(this.obj).length > 0) {
                     res += "{";
-                    res += Object.entries(this.obj).map(([k, v]) => k + ": " + v.printFmt()).join(", ");
+                    res += Object.entries(this.obj)
+                            .map(([k, v]) => k + ": " + v.printFmt())
+                            .join(", ");
                     res += "}";
                 }
                 break;
-            case ValType.Function:
+            case Type.VTFunction:
                 res += "Function";
                 if (this.params.length !== 0) {
                     res += "(";
@@ -167,9 +168,17 @@ export class Type {
 
         // Check equality of more compounded types
         switch (this.vt) {
-            case ValType.Array:
+            // Array Type Equality:
+            //    Array types are equal
+            //    Lengths are equal
+            case Type.VTArray:
                 return this.arraytype.equals(other.arraytype) && this.length === other.length;
-            case ValType.Object:
+
+            // Object Type Equality:
+            //    Same amount of keys
+            //    Object keys are equal
+            //    Types at each key are equal
+            case Type.VTObject:
                 const keys1 = Object.keys(this.obj);
                 const keys2 = Object.keys(other.obj);
                 if (keys1.length !== keys2.length)
@@ -181,17 +190,24 @@ export class Type {
                         return false;
                 }
                 return true;
-            case ValType.Function:
+
+            // Function Type Equality:
+            //    Same amount of parameters
+            //    Positional parameters types are equal
+            //    Return types are equal
+            case Type.VTFunction:
                 if (this.params.length !== other.params.length)
                     return false;
                 for (const [p1, p2] of zip(this.params, other.params))
                     if (!p1.equals(p2))
                         return false;
                 return this.return.equals(other.return);
+
             default:
                 return true;
         }
     }
 }
 
-
+// let x = Type.Function([Type.Array(Type.Number())], Type.Array());
+// console.log(x.printFmt());
