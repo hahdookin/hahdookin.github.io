@@ -1,8 +1,8 @@
 import {
     Value,
-    CompoundType,
     Param
 } from "./value.js";
+import { Type } from "./type.js";
 
 import { call } from "./parser.js";
 import { zip } from "./utils.js";
@@ -19,10 +19,10 @@ export const intrinsic_fns = {};
 //   desc: String[],
 //   params: {
 //      name: String,
-//      type: CompoundType
+//      type: Type
 //   }[],
 //   returns: {
-//      type: CompoundType,
+//      type: Type,
 //      desc: String[],
 //   }
 //   example: String[] | undefined
@@ -46,10 +46,10 @@ intrinsic_docs["isnumber"] = {
         "Check if a variable is number type",
     ],
     params: [
-        new Param("value", CompoundType.Any())
+        new Param("value", Type.Any())
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "1 if number, 0 otherwise"
     },
     example: [
@@ -68,10 +68,10 @@ intrinsic_docs["isstring"] = {
         "Check if a variable is string type",
     ],
     params: [
-        new Param("value", CompoundType.Any())
+        new Param("value", Type.Any())
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "1 if string, 0 otherwise"
     },
     example: [
@@ -88,10 +88,10 @@ intrinsic_docs["isarray"] = {
         "Check if a variable is array type",
     ],
     params: [
-        new Param("value", CompoundType.Any()),
+        new Param("value", Type.Any()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "1 if array, 0 otherwise"
     },
     example: [
@@ -108,10 +108,10 @@ intrinsic_docs["isobject"] = {
         "Check if a variable is object type",
     ],
     params: [
-        new Param("value", CompoundType.Any()),
+        new Param("value", Type.Any()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "1 if object, 0 otherwise"
     },
     example: [
@@ -128,10 +128,10 @@ intrinsic_docs["isfunction"] = {
         "Check if a variable is function type",
     ],
     params: [
-        new Param("value", CompoundType.Any()),
+        new Param("value", Type.Any()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "1 if function, 0 otherwise"
     },
     example: [
@@ -154,8 +154,8 @@ intrinsic_docs["push"] = {
         "Pushes a value to the end of an array.",
     ],
     params: [
-        new Param("arr", CompoundType.Array()),
-        new Param("val", CompoundType.Any()),
+        new Param("arr", Type.Array()),
+        new Param("val", Type.Any()),
     ],
     returns: {},
     example: [
@@ -175,10 +175,10 @@ intrinsic_docs["pop"] = {
         "an array and return it.",
     ],
     params: [
-        new Param("arr", CompoundType.Array()),
+        new Param("arr", Type.Array()),
     ],
     returns: {
-        type: CompoundType.Any(),
+        type: Type.Any(),
         desc: "Value popped"
     },
     example: [
@@ -198,10 +198,10 @@ intrinsic_docs["dequeue"] = {
         "an array and return it.",
     ],
     params: [
-        new Param("arr", CompoundType.Array()),
+        new Param("arr", Type.Array()),
     ],
     returns: {
-        type: CompoundType.Any(),
+        type: Type.Any(),
         desc: "Value dequeued"
     },
     example: [
@@ -220,10 +220,10 @@ intrinsic_docs["len"] = {
         "Returns the length of the iterable.",
     ],
     params: [
-        new Param("list", CompoundType.Array()),
+        new Param("list", Type.Array()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "Amount of items in list"
     },
     example: [
@@ -249,11 +249,11 @@ intrinsic_docs["concat"] = {
         "the concatenation of two.",
     ],
     params: [
-        new Param("s1", CompoundType.String()),
-        new Param("s2", CompoundType.String()),
+        new Param("s1", Type.String()),
+        new Param("s2", Type.String()),
     ],
     returns: {
-        type: CompoundType.String(),
+        type: Type.String(),
         desc: "Concatenation of s1 and s2"
     },
     example: [
@@ -277,11 +277,11 @@ intrinsic_docs["zip"] = {
         "Zips two arrays together into a new one."
     ],
     params: [
-        new Param("a1", CompoundType.Array()),
-        new Param("a2", CompoundType.Array()),
+        new Param("a1", Type.Array()),
+        new Param("a2", Type.Array()),
     ],
     returns: {
-        type: CompoundType.Array(CompoundType.Array()),
+        type: Type.Array(Type.Array()),
         desc: "index 0 contains [a1[0], a2[0]], and so on"
     },
     example: [
@@ -298,10 +298,10 @@ intrinsic_docs["deepcopy"] = {
         "recursively.",
     ],
     params: [
-        new Param("src", CompoundType.Array()),
+        new Param("src", Type.Array()),
     ],
     returns: {
-        type: CompoundType.Array(),
+        type: Type.Array(),
         desc: "deep copy of src"
     },
 };
@@ -323,10 +323,10 @@ intrinsic_docs["shallowcopy"] = {
         "(no top-level references) of an another array.",
     ],
     params: [
-        new Param("src", CompoundType.Array()),
+        new Param("src", Type.Array()),
     ],
     returns: {
-        type: CompoundType.Array(),
+        type: Type.Array(),
         desc: "shallow copy of src"
     },
 };
@@ -344,14 +344,14 @@ intrinsic_docs["filter"] = {
         "by a predicate."
     ],
     params: [
-        new Param("arr", CompoundType.Array()),
-        new Param("f", CompoundType.Function(
-            [CompoundType.Any()],
-            CompoundType.Number()
+        new Param("arr", Type.Array()),
+        new Param("f", Type.Function(
+            [Type.Any()],
+            Type.Number()
         )),
     ],
     returns: {
-        type: CompoundType.Array(),
+        type: Type.Array(),
         desc: "arr with all elements where f(arr[i]) is true"
     },
     example: [
@@ -378,14 +378,14 @@ intrinsic_docs["map"] = {
         "element mapped by a function."
     ],
     params: [
-        new Param("arr", CompoundType.Array()),
-        new Param("f", CompoundType.Function(
-            [CompoundType.Any()],
-            CompoundType.Any()
+        new Param("arr", Type.Array()),
+        new Param("f", Type.Function(
+            [Type.Any()],
+            Type.Any()
         )),
     ],
     returns: {
-        type: CompoundType.Array(),
+        type: Type.Array(),
         desc: "arr where all elements are f(arr[i])"
     },
     example: [
@@ -410,10 +410,10 @@ intrinsic_docs["reverse"] = {
         "element in reverse order."
     ],
     params: [
-        new Param("arr", CompoundType.Array()),
+        new Param("arr", Type.Array()),
     ],
     returns: {
-        type: CompoundType.Array(),
+        type: Type.Array(),
         desc: "reversed array"
     },
     example: [
@@ -436,10 +436,10 @@ intrinsic_docs["foreach"] = {
         "Calls a function on each element of an array",
     ],
     params: [
-        new Param("arr", CompoundType.Array()),
-        new Param("f", CompoundType.Function(
-            [CompoundType.Any()],
-            CompoundType.Void()
+        new Param("arr", Type.Array()),
+        new Param("f", Type.Function(
+            [Type.Any()],
+            Type.Void()
         )),
     ],
     returns: {},
@@ -462,14 +462,14 @@ intrinsic_docs["reduce"] = {
         "accumulator function."
     ],
     params: [
-        new Param("arr", CompoundType.Array()),
-        new Param("f", CompoundType.Function(
-            [CompoundType.Any(), CompoundType.Any()],
-            CompoundType.Any()
+        new Param("arr", Type.Array()),
+        new Param("f", Type.Function(
+            [Type.Any(), Type.Any()],
+            Type.Any()
         )),
     ],
     returns: {
-        type: CompoundType.Any(),
+        type: Type.Any(),
         desc: "Value accumulated by accumulator."
     },
     example: [
@@ -496,11 +496,11 @@ intrinsic_docs["range"] = {
         "Creates a range from a start and stop"
     ],
     params: [
-        new Param("start", CompoundType.Number()),
-        new Param("stop", CompoundType.Number()),
+        new Param("start", Type.Number()),
+        new Param("stop", Type.Number()),
     ],
     returns: {
-        type: CompoundType.Array(CompoundType.Number()),
+        type: Type.Array(Type.Number()),
         desc: "Sequence of the range"
     },
     //example: [ ]
@@ -523,10 +523,10 @@ intrinsic_docs["keys"] = {
         "Return an array of keys from an object.",
     ],
     params: [
-        new Param("obj", CompoundType.Object()),
+        new Param("obj", Type.Object()),
     ],
     returns: {
-        type: CompoundType.Array(CompoundType.String()),
+        type: Type.Array(Type.String()),
         desc: "Array with all keys in the obj."
     },
     example: [
@@ -547,10 +547,10 @@ intrinsic_docs["values"] = {
         "Return an array of values from an object.",
     ],
     params: [
-        new Param("obj", CompoundType.Object()),
+        new Param("obj", Type.Object()),
     ],
     returns: {
-        type: CompoundType.Array(),
+        type: Type.Array(),
         desc: "Array with all values in the obj."
     },
     example: [
@@ -571,12 +571,12 @@ intrinsic_docs["entries"] = {
         "Return an array of key/value pairs from an object.",
     ],
     params: [
-        new Param("obj", CompoundType.Object()),
+        new Param("obj", Type.Object()),
     ],
     returns: {
-        type: CompoundType.Array(CompoundType.Object(
+        type: Type.Array(Type.Object(
             ["key", "value"],
-            [CompoundType.String(), CompoundType.Any()]
+            [Type.String(), Type.Any()]
         )),
         desc: "Array of objects of key/value pairs.",
     },
@@ -607,7 +607,7 @@ intrinsic_docs["print"] = {
         "Prints arguments' str reps to stdout.",
     ],
     params: [
-        new Param("...args", CompoundType.Any()),
+        new Param("...args", Type.Any()),
     ],
     returns: {},
 };
@@ -622,8 +622,8 @@ intrinsic_docs["assert"] = {
         "Assert a condition, print message if condition is 0.",
     ],
     params: [
-        new Param("expr", CompoundType.Number()),
-        new Param("msg", CompoundType.String()),
+        new Param("expr", Type.Number()),
+        new Param("msg", Type.String()),
     ],
     returns: {},
 };
@@ -653,10 +653,10 @@ intrinsic_docs["str"] = {
         "Return the string representation of a data type.",
     ],
     params: [
-        new Param("val", CompoundType.Any()),
+        new Param("val", Type.Any()),
     ],
     returns: {
-        type: CompoundType.String(),
+        type: Type.String(),
         desc: "String representation of val"
     },
     example: [
@@ -675,11 +675,11 @@ intrinsic_docs["repeat"] = {
         "Creates a string repeated n times.",
     ],
     params: [
-        new Param("str", CompoundType.String()),
-        new Param("n", CompoundType.Number()),
+        new Param("str", Type.String()),
+        new Param("n", Type.Number()),
     ],
     returns: {
-        type: CompoundType.String(),
+        type: Type.String(),
         desc: "str concated with itself n times"
     },
     example: [
@@ -696,12 +696,12 @@ intrinsic_docs["substring"] = {
         "Creates a substring of a string with given indices.",
     ],
     params: [
-        new Param("str", CompoundType.String()),
-        new Param("start", CompoundType.Number()),
-        new Param("end", CompoundType.Number()),
+        new Param("str", Type.String()),
+        new Param("start", Type.Number()),
+        new Param("end", Type.Number()),
     ],
     returns: {
-        type: CompoundType.String(),
+        type: Type.String(),
         desc: "substring of str of [start, end)"
     },
     example: [
@@ -720,11 +720,11 @@ intrinsic_docs["strcmp"] = {
         "Compares strings using C style string comparison.",
     ],
     params: [
-        new Param("s1", CompoundType.String()),
-        new Param("s2", CompoundType.String()),
+        new Param("s1", Type.String()),
+        new Param("s2", Type.String()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "C style string comparison"
     },
     example: [
@@ -749,11 +749,11 @@ intrinsic_docs["streq"] = {
         "Test if strings are equal.",
     ],
     params: [
-        new Param("s1", CompoundType.String()),
-        new Param("s2", CompoundType.String()),
+        new Param("s1", Type.String()),
+        new Param("s2", Type.String()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "1 if strings are equal, 0 otherwise"
     },
     example: [
@@ -771,10 +771,10 @@ intrinsic_docs["tolower"] = {
         "Create a string with all lowercase letters.",
     ],
     params: [
-        new Param("str", CompoundType.String()),
+        new Param("str", Type.String()),
     ],
     returns: {
-        type: CompoundType.String(),
+        type: Type.String(),
         desc: "str with all uppercase letter as lowercase"
     },
     example: [
@@ -791,10 +791,10 @@ intrinsic_docs["toupper"] = {
         "Create a string with all uppercase letters.",
     ],
     params: [
-        new Param("str", CompoundType.String()),
+        new Param("str", Type.String()),
     ],
     returns: {
-        type: CompoundType.String(),
+        type: Type.String(),
         desc: "str with all lowercase letter as uppercase"
     },
     example: [
@@ -815,10 +815,10 @@ intrinsic_docs["sin"] = {
         "Returns the sine of n in radians",
     ],
     params: [
-        new Param("n", CompoundType.Number()),
+        new Param("n", Type.Number()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "sine of n in radians"
     },
 };
@@ -832,10 +832,10 @@ intrinsic_docs["cos"] = {
         "Returns the cosine of n in radians",
     ],
     params: [
-        new Param("n", CompoundType.Number()),
+        new Param("n", Type.Number()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "cosine of n in radians"
     },
 };
@@ -849,10 +849,10 @@ intrinsic_docs["tan"] = {
         "Returns the tangent of n in radians",
     ],
     params: [
-        new Param("n", CompoundType.Number()),
+        new Param("n", Type.Number()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "tangent of n in radians"
     },
 };
@@ -866,10 +866,10 @@ intrinsic_docs["asin"] = {
         "Returns the arcsine of n",
     ],
     params: [
-        new Param("n", CompoundType.Number()),
+        new Param("n", Type.Number()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "arcsine of n"
     },
 };
@@ -883,10 +883,10 @@ intrinsic_docs["acos"] = {
         "Returns the arccosine of n",
     ],
     params: [
-        new Param("n", CompoundType.Number()),
+        new Param("n", Type.Number()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "arccosine of n"
     },
 };
@@ -900,10 +900,10 @@ intrinsic_docs["atan"] = {
         "Returns the arctangent of n",
     ],
     params: [
-        new Param("n", CompoundType.Number()),
+        new Param("n", Type.Number()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "arctangent of n"
     },
 };
@@ -917,10 +917,10 @@ intrinsic_docs["ln"] = {
         "Returns the natural log of n",
     ],
     params: [
-        new Param("n", CompoundType.Number()),
+        new Param("n", Type.Number()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "Natural log of n"
     },
 };
@@ -935,7 +935,7 @@ intrinsic_docs["rand"] = {
     ],
     params: [],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "Random float in range [0, 1)"
     }
 };
@@ -949,11 +949,11 @@ intrinsic_docs["randint"] = {
         "Returns a random integer between a specified range",
     ],
     params: [
-        new Param("lower", CompoundType.Number()),
-        new Param("upper", CompoundType.Number()),
+        new Param("lower", Type.Number()),
+        new Param("upper", Type.Number()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "Random integer in range [lower, upper)"
     }
 };
@@ -970,10 +970,10 @@ intrinsic_docs["floor"] = {
         "Returns the floor of a float",
     ],
     params: [
-        new Param("n", CompoundType.Number()),
+        new Param("n", Type.Number()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "n rounded down to nearest integer"
     },
 };
@@ -987,10 +987,10 @@ intrinsic_docs["ceil"] = {
         "Returns the ceil of a float",
     ],
     params: [
-        new Param("n", CompoundType.Number()),
+        new Param("n", Type.Number()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "n rounded down to nearest integer"
     },
 };
@@ -1004,10 +1004,10 @@ intrinsic_docs["round"] = {
         "Returns n rounded to nearest integer",
     ],
     params: [
-        new Param("n", CompoundType.Number()),
+        new Param("n", Type.Number()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "n rounded to nearest integer"
     },
 };
@@ -1021,10 +1021,10 @@ intrinsic_docs["sqrt"] = {
         "Returns the square root of a number",
     ],
     params: [
-        new Param("n", CompoundType.Number()),
+        new Param("n", Type.Number()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "square root of n"
     },
 };
@@ -1038,10 +1038,10 @@ intrinsic_docs["abs"] = {
         "Returns the absolute value of a number",
     ],
     params: [
-        new Param("n", CompoundType.Number()),
+        new Param("n", Type.Number()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "absolute value of n"
     },
 };
@@ -1055,10 +1055,10 @@ intrinsic_docs["sign"] = {
         "Returns a number denoting the sign of a number",
     ],
     params: [
-        new Param("n", CompoundType.Number()),
+        new Param("n", Type.Number()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "-1 if n < 0, 0 if n is 0, otherwise 1"
     },
 };
@@ -1072,10 +1072,10 @@ intrinsic_docs["exp"] = {
         "Returns e (euler's constant) raised to the power of a number",
     ],
     params: [
-        new Param("n", CompoundType.Number()),
+        new Param("n", Type.Number()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "e (euler's constant) raised to the power of n"
     },
 };
@@ -1089,11 +1089,11 @@ intrinsic_docs["pow"] = {
         "Returns a number raised to the power of another number",
     ],
     params: [
-        new Param("n", CompoundType.Number()),
-        new Param("x", CompoundType.Number()),
+        new Param("n", Type.Number()),
+        new Param("x", Type.Number()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "n raised to the power of n"
     },
 };
@@ -1107,12 +1107,12 @@ intrinsic_docs["clamp"] = {
         "Returns a number clamped between a min and a max",
     ],
     params: [
-        new Param("n", CompoundType.Number()),
-        new Param("min", CompoundType.Number()),
-        new Param("max", CompoundType.Number()),
+        new Param("n", Type.Number()),
+        new Param("min", Type.Number()),
+        new Param("max", Type.Number()),
     ],
     returns: {
-        type: CompoundType.Number(),
+        type: Type.Number(),
         desc: "n clamped between min and max"
     },
 };

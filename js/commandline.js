@@ -7,9 +7,9 @@ import {
 import { symbolTable } from "./parser.js";
 import {
     Value,
-    CompoundType,
     Param
 } from "./value.js";
+import { Type } from "./type.js";
 import { TokenStream } from "./lexer.js";
 import {
     TokenType,
@@ -167,7 +167,7 @@ intrinsic_docs["print"] = {
         "Print arguments' str reprs to the console.",
     ],
     params: [
-        new Param("...args", CompoundType.Any()),
+        new Param("...args", Type.Any()),
     ],
     returns: {},
 };
@@ -241,7 +241,7 @@ intrinsic_docs["docs"] = {
         "functions to the console.",
     ],
     params: [
-        new Param("fn", CompoundType.Function()),
+        new Param("fn", Type.Function()),
     ],
     returns: {},
 };
@@ -299,7 +299,7 @@ intrinsic_docs["tutorial"] = {
         "Prints tutorial messages to the console.",
     ],
     params: [
-        new Param("page", CompoundType.Number()),
+        new Param("page", Type.Number()),
     ],
     returns: {},
 };
@@ -320,7 +320,7 @@ intrinsic_docs["goto"] = {
         "Move to a location in the console.",
     ],
     params: [
-        new Param("loc", CompoundType.String()),
+        new Param("loc", Type.String()),
     ],
     returns: {},
 };

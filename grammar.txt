@@ -49,13 +49,14 @@ VariableRef  -> ident
 //=======================
 // Type Expressions
 //=======================
-TypeExpr -> Number
-          | String
-          | Any
-          | Void
-          | ArrayType
-          | ObjectType
-          | FunctionType
+TypeExpr   -> TypeFactor {| TypeFactor}*
+TypeFactor -> Number
+            | String
+            | Any
+            | Void
+            | ArrayType
+            | ObjectType
+            | FunctionType
 
 ArrayType    -> Array[TypeExpr]
 ObjectType   -> Object{ident: TypeExpr{, ident: TypeExpr}*}
