@@ -217,7 +217,7 @@ export function Stmt(stream) {
         case TokenType.TYPEDEF:
             status = TypeDef(stream, typeval);
             console.log(typeval.printFmt()); // TODO: remove me
-            //console.log(typeTable); // TODO: remove me
+            console.log(typeTable); // TODO: remove me
             break;
 
         default:
@@ -225,7 +225,7 @@ export function Stmt(stream) {
             status = Expr(stream, value);
             // This line below makes the interpreter
             // more interactive. TODO: Consider using this.
-            if (!fnState.in_function)
+            if (status && !fnState.in_function)
                 call(intrinsic_fns["print"], [value]);
             break;
     }
@@ -453,7 +453,7 @@ export function IfStmt(stream) {
 }
 
 // Starts with the assumption a `let` has already been read.
-// (let | final) ident {= Expr}{, ident {= Expr}}*
+// (let | final) ident{: TypeExpr} {= Expr}{, ident{: TypeExpr} {= Expr}}* ;
 export function LetStmt(stream, decl_type) {
     // debugger;
     let decl_str = token_type_str(decl_type);
@@ -471,6 +471,16 @@ export function LetStmt(stream, decl_type) {
 
         // debugger;
         token = stream.next();
+        let explicit_typeval = new Type();
+        if (token.tt === TokenType.COLON) {
+            status = TypeExpr(stream, explicit_typeval);
+            if (!status)
+                return false;
+            // TODO: Handle explicit types in decl statements
+            // i.e. let x: Number = 5;
+            // Maybe compare explicit type and evaluated type
+            token = stream.next();
+        }
         if (token.tt === TokenType.ASSIGN) {
             status = Expr(stream, val);
             token = stream.next();
@@ -564,22 +574,28 @@ export function FunctionLiteral(stream, retval) {
     if (token.tt !== TokenType.RPAREN)
         return parse_error("Missing `)` in fn param list");
     token = stream.next();
+    let rettype = Type.Void();
+    if (token.tt === TokenType.COLON) {
+        // Define type of return
+        status = TypeExpr(stream, rettype);
+        if (!status)
+            return false;
+        token = stream.next();
+    }
     if (token.tt !== TokenType.LBRACE)
         return parse_error("Missing '{' in fn def");
 
     // Start saving tokens for fn body
     // until the closing '}' is read.
     // Don't save the closing '}'.
-    // let lbrace_count = 0;
-    // token = stream.next();
     let tokens_read = [];
     readTillBlockEnd(stream, tokens_read);
-    let val = Value.fromFunction(tokens_read, params);
-    retval.setFromValue(val);
     // Confirm closing '}'
     token = stream.next();
     if (token.tt !== TokenType.RBRACE)
         return parse_error("Missing closing '}' in function literal");
+    let val = Value.fromFunction(tokens_read, params, rettype, "anonymous");
+    retval.setFromValue(val);
     return true;
 }
 
@@ -604,7 +620,7 @@ export function ParamList(stream, params) {
         token = stream.next();
         if (token.tt === TokenType.COLON) {
             type = new Type();
-            status = TypeExpr(stream, type);
+            status = TypeFactor(stream, type);
             if (!status)
                 return false;
             token = stream.next();
@@ -721,7 +737,7 @@ export function EnumList(stream, enum_ident) {
 //===========================
 
 // Starts with the assumption a 'typedef' has already been read.
-// TypeDef -> typedef TypeExpr ident ;
+// TypeDef -> typedef TypeFactor ident ;
 export function TypeDef(stream, typeval) {
     let status = TypeExpr(stream, typeval);
     if (!status)
@@ -735,17 +751,56 @@ export function TypeDef(stream, typeval) {
     return true;
 }
 
-// TypeExpr -> Number
-//       | String
-//       | Any
-//       | ArrayType
-//       | ObjectType
-//       | FunctionType
-//
-// ArrayType    -> Array[TypeExpr]
-// ObjectType   -> Object{ident: TypeExpr{, ident: TypeExpr}*}
-// FunctionType -> Function{(TypeExpr{, TypeExpr}*)}{: TypeExpr}
+// TypeExpr -> TypeFactor {| TypeFactor}*
 export function TypeExpr(stream, typeval) {
+    let val1 = new Type(), val2;
+
+    let t1 = TypeFactor(stream, val1);
+
+    if (!t1)
+        return false;
+
+    let token = stream.next();
+    if (token.tt !== TokenType.BWOR) {
+        stream.pushback(token);
+        typeval.setFrom(val1);
+        return true;
+    }
+
+    let uniontypes = [val1];
+    while (
+        token.tt == TokenType.BWOR
+    ) {
+        val2 = new Type();
+        t1 = TypeFactor(stream, val2);
+
+        if (!t1)
+            return parse_error("Missing Type expression after union operator");
+
+        // T | T is redundant, report error because why not
+        for (const type of uniontypes)
+            if (val2.equals(type))
+                return parse_error(`Redundant union type ${type.printFmt()}`)
+
+        // Evaluate
+        uniontypes.push(val2);
+
+        token = stream.next();
+    }
+    typeval.setUnion(uniontypes);
+    stream.pushback(token);
+    return true;
+
+}
+// TypeFactor -> Type {| Type}*
+// Type     -> Number
+//           | String
+//           | Any
+//           | Void
+//           | ArrayType
+//           | ObjectType
+//           | FunctionType
+export function TypeFactor(stream, typeval) {
     let token = stream.next();
     let status;
     switch (token.tt) {
@@ -1581,7 +1636,9 @@ export function Factor(stream, retval) {
             let symbolname = token.lexeme;
             let symbolval = symbolTable.find(symbolname);
             if (!symbolval)
-                return parse_error(`Use of undeclared ident '${symbolname}'`)
+                return parse_error(`Use of undeclared ident '${symbolname}'`);
+            if (symbolval.isNone())
+                return parse_error(`Use of uninitialized ident '${symbolname}'`);
             retval.setFromValue(symbolval);
             return true;
 
@@ -1635,19 +1692,34 @@ export function Factor(stream, retval) {
 export function Array(stream, retval) {
     let token = stream.next();
     let val = new Value();
+    let typeval = null;
+    let types_in_array = [];
     let status;
     retval.setArray([]);
 
     if (token.tt === TokenType.RBRACK)
         return true;
 
-    while (token.tt != TokenType.RBRACK) {
+    while (token.tt !== TokenType.RBRACK) {
         stream.pushback(token);
         status = Expr(stream, val);
-        retval.addArrayValue(Value.from(val));
         if (!status)
             return parse_error("Array list error");
+        retval.addArrayValue(Value.from(val));
+
+        // Determine type of array
+        if (!typeval) {
+            typeval = val.type;
+            types_in_array.push(val.type);
+        } else if (!typeval.equals(Type.Any())) {
+            types_in_array.push(val.type);
+            for (const type of types_in_array)
+                if (!typeval.equals(type))
+                    typeval.setAny();
+        }
+
         token = stream.next();
+
         if (token.tt !== TokenType.COMMA && token.tt !== TokenType.RBRACK)
             return parse_error("Array list error");
         if (token.tt === TokenType.RBRACK)
@@ -1658,6 +1730,8 @@ export function Array(stream, retval) {
     token = stream.next();
     if (token.tt !== TokenType.RBRACK)
         return parse_error("Missing `]` in array literal");
+
+    retval.type.setArray(typeval);
     return true;
 }
 

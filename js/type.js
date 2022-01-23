@@ -1,29 +1,33 @@
 import { zip } from "./utils.js";
 
-// Base -> Number
-//       | String
-//       | Any
-//       | ArrayType
-//       | ObjectType
-//       | FunctionType
+// TypeExpr -> Number
+//           | String
+//           | Any
+//           | ArrayType
+//           | ObjectType
+//           | FunctionType
 //
-// ArrayType    -> Array[Base]
-// ObjectType   -> Object{ident: Base{, ident: Base}*}
-// FunctionType -> Function{(Base{, Base}*)}{: Base}
+// ArrayType    -> Array[TypeExpr]
+// ObjectType   -> Object{ident: TypeExpr{, ident: TypeExpr}*}
+// FunctionType -> Function{(TypeExpr{, TypeExpr}*)}{: TypeExpr}
 export class Type {
-    static VTNone = 0;
-    static VTNumber = 1;
-    static VTString = 2;
-    static VTArray = 3;
-    static VTObject = 4;
+    static VTNone     = 0;
+    static VTNumber   = 1;
+    static VTString   = 2;
+    static VTArray    = 3;
+    static VTObject   = 4;
     static VTFunction = 5;
-    static VTAny = 6;
-    static VTVoid = 7;
+    static VTAny      = 6;
+    static VTVoid     = 7;
+    static VTUnion    = 8;
     /**
-     * @param {ValType} vt
+     * @param {Number} vt
      */
     constructor(vt) {
         this.vt = vt; // Whatever type this is i.e Number, String
+
+        // Union
+        this.types = null;
 
         // Array
         this.arraytype = null;
@@ -38,6 +42,7 @@ export class Type {
     }
     setFrom(other) {
         this.vt = other.vt;
+        this.types = other.types;
         this.arraytype = other.arraytype;
         this.length = other.length;
         this.obj = other.obj;
@@ -60,7 +65,7 @@ export class Type {
      * @param {number} length
      */
     static Array(arraytype, length=-1)  {
-        let type = new Type(Type.VTArray);
+        const type = new Type(Type.VTArray);
         type.arraytype = arraytype ?? Type.Any();
         type.length = length;
         return type;
@@ -78,7 +83,7 @@ export class Type {
      * @param {Type[]} types
      */
     static Object(keys, types)  {
-        let type = new Type(Type.VTObject);
+        const type = new Type(Type.VTObject);
         if (!keys && !types) {
             type.obj = {};
             return type;
@@ -104,7 +109,7 @@ export class Type {
      * @param {Type} returntype
      */
     static Function(paramtypes, returntype)  {
-        let type = new Type(Type.VTFunction);
+        const type = new Type(Type.VTFunction);
         type.params = paramtypes ?? [];
         type.return = returntype ?? Type.Void();
         return type;
@@ -118,6 +123,23 @@ export class Type {
         this.params = paramtypes;
         this.return = returntype;
     }
+
+    /**
+     * @param {Type[]} types
+     */
+    static Union(types) {
+        const type = new Type(Type.VTUnion);
+        type.types = types;
+        return type;
+    }
+    /**
+     * @param {Type[]} types
+     */
+    setUnion(types) {
+        this.vt = Type.VTUnion;
+        this.types = types;
+    }
+
     printFmt() {
         let res = "";
         switch (this.vt) {
@@ -156,15 +178,20 @@ export class Type {
                     res += this.params.map(p => p.printFmt()).join(", ");
                     res += ")";
                 }
-                if (!this.return.equals(Type.Void()))
+                // if (!this.return.equals(Type.Void()))
                     res += ": " + this.return.printFmt();
+                break;
+            case Type.VTUnion:
+                res += this.types.map(t => t.printFmt()).join(" | ");
                 break;
         }
         return res;
     }
-    equals(other) {
+    equals(other, exact=false) {
         if (this.vt !== other.vt)
             return false;
+        if (!exact)
+            return true;
 
         // Check equality of more compounded types
         switch (this.vt) {

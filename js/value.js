@@ -60,7 +60,7 @@ export class Value {
     static fromFunction(tokens, params, rettype, ident) {
         let res = new Value();
         res.type = Type.Function(params.map(p => p.type), rettype);
-        console.log(res.type.printFmt());
+        console.log(res.type.printFmt()); // TODO: Remove me
         res.Ftemp = {};
         res.Ftemp.tokens = tokens;
         res.Ftemp.params = params;
@@ -174,22 +174,14 @@ export class Value {
         return Object.keys(this.Otemp).includes(key);
     }
     indexable() {
-        switch (this.type) {
-            case Type.String():
-            case Type.Array():
-            case Type.Object():
-                return true;
-        }
-        return false;
+        return this.type.equals(Type.String()) ||
+               this.type.equals(Type.Array())  ||
+               this.type.equals(Type.Object());
     }
     iterable() {
-        switch (this.type) {
-            case Type.String():
-            case Type.Array():
-            case Type.Object():
-                return true;
-        }
-        return false;
+        return this.type.equals(Type.String()) ||
+               this.type.equals(Type.Array())  ||
+               this.type.equals(Type.Object());
     }
     isIntrinsic() {
         return this.isFunction() && this.Ftemp.intrinsic;
@@ -267,10 +259,7 @@ export class Value {
         if (this.isFunction()) {
             let res;
             let params = this.Ftemp.params;
-            let paramlist = "";
-            for (const param of params)
-                paramlist += param.name + ", ";
-            paramlist = paramlist.substring(0, paramlist.length - 2);
+            let paramlist = params.map(p => p.name).join(", ");
             let fnbody;
             if (this.Ftemp.intrinsic) {
                 fnbody = "[compiled binary]"
