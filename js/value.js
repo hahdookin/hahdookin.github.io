@@ -183,6 +183,14 @@ export class Value {
                this.type.equals(Type.Array())  ||
                this.type.equals(Type.Object());
     }
+    iterator() {
+        if (this.isArray())
+            return this.Atemp;
+        if (this.isString())
+            return [...this.Stemp].map(c => Value.fromString(c));
+        if (this.isObject())
+            return Object.keys(this.Otemp).map(k => Value.fromString(k));
+    }
     isIntrinsic() {
         return this.isFunction() && this.Ftemp.intrinsic;
     }
