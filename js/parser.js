@@ -225,8 +225,8 @@ export function Stmt(stream) {
             status = Expr(stream, value);
             // This line below makes the interpreter
             // more interactive. TODO: Consider using this.
-            if (status && !fnState.in_function)
-                call(intrinsic_fns["print"], [value]);
+            // if (status && !fnState.in_function)
+            //     call(intrinsic_fns["print"], [value]);
             break;
     }
     if (!status)
@@ -320,7 +320,7 @@ export function Block(stream) {
 }
 
 // Starts with the assumption a 'for' has already been read.
-// for ident in iterable Block
+// ForStmt -> for ident in iterable Block
 export function ForStmt(stream) {
     let token = stream.next();
     if (token.tt !== TokenType.Ident)
@@ -335,6 +335,7 @@ export function ForStmt(stream) {
         return false;
     if (!iter_value.iterable())
         return parse_error(`Type ${iter_value.typeStr()} not iterable`);
+    const iterator = iter_value.iterator();
     token = stream.next();
     if (token.tt !== TokenType.LBRACE)
         return parse_error("Missing '{' in for stmt")
@@ -345,7 +346,8 @@ export function ForStmt(stream) {
     readTillBlockEnd(stream, body_tokens);
     const body = new TokenStream(body_tokens.join(' '));
     symbolTable.addScope();
-    for (const val of iter_value.Atemp) {
+    //for (const val of iter_value.Atemp) {
+    for (const val of iterator) {
         symbolTable.add(loop_ident, Value.from(val));
         symbolTable.addScope();
         typeTable.addScope();
@@ -485,9 +487,8 @@ export function LetStmt(stream, decl_type) {
             status = Expr(stream, val);
             token = stream.next();
         }
-        if (token.tt === TokenType.COMMA) {
+        if (token.tt === TokenType.COMMA)
             token = stream.next();
-        }
         symbolTable.add(symbolname, val);
     }
 
@@ -1709,7 +1710,8 @@ export function Array(stream, retval) {
 
         // Determine type of array
         if (!typeval) {
-            typeval = val.type;
+            typeval = new Type();
+            typeval.setFrom(val.type);
             types_in_array.push(val.type);
         } else if (!typeval.equals(Type.Any())) {
             types_in_array.push(val.type);

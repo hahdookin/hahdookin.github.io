@@ -4,7 +4,10 @@ import {
     intrinsic_docs,
     add
 } from "./intrinsics.js";
-import { symbolTable } from "./parser.js";
+import {
+    symbolTable,
+    typeTable
+} from "./parser.js";
 import {
     Value,
     Param
@@ -451,7 +454,7 @@ prompt.addEventListener("keydown", e => {
             else
                 history_index++;
         }
-        prompt.innerText = "";
+        prompt.innerHTML = "";
     } else if (e.key === "ArrowUp") {
         // Handle command history
         e.preventDefault();
@@ -465,7 +468,7 @@ prompt.addEventListener("keydown", e => {
         e.preventDefault();
         if (history_index === null) return;
         if (history_index === history.length - 1) {
-            prompt.innerText = "";
+            prompt.innerHTML = "";
             highlighted.innerText = "";
             return;
         }
@@ -482,7 +485,7 @@ function token_highlight_class(token, peek) {
         return "keyword";
     if (operators.find(token.lexeme))
         return "normaltext";
-    if (types.find(token.lexeme))
+    if (types.find(token.lexeme) || typeTable.find(token.lexeme))
         return "type";
     switch (token.tt) {
         case TokenType.Number:
