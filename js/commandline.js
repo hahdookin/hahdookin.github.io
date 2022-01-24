@@ -454,7 +454,9 @@ prompt.addEventListener("keydown", e => {
             else
                 history_index++;
         }
+        e.preventDefault();
         prompt.innerHTML = "";
+        highlighted.innerHTML = "";
     } else if (e.key === "ArrowUp") {
         // Handle command history
         e.preventDefault();
