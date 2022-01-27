@@ -374,6 +374,32 @@ function list() {
 add("list", list, false);
 add("ls", list, false);
 
+intrinsic_docs["upload"] = {
+    desc: [
+        "Open file upload prompt and load a file to be executed.",
+    ],
+    params: [],
+    returns: {},
+};
+function upload() {
+    const upload_btn = document.getElementById("upload");
+    upload_btn.click();
+    upload_btn.onchange = e => {
+        const file = upload_btn.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.readAsText(file, "UTF-8");
+            reader.onload = e => {
+                interpret(e.target.result);
+            }
+            reader.onerror = e => {
+                console.log(`Error reading file: ${file.name}`)
+            }
+        }
+    }
+}
+add("upload", upload, false);
+
 // Add our CLI intrinsics to the symboltable
 for (const intrinsic in intrinsic_fns)
     symbolTable.add(intrinsic, intrinsic_fns[intrinsic]);
