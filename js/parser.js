@@ -10,10 +10,6 @@ import {
 import { Type } from "./type.js";
 import { intrinsic_fns } from "./intrinsics.js";
 import { token_type_str } from "./token.js";
-import {
-    zip,
-    unreachable,
-} from "./utils.js";
 
 class IdentTable {
     constructor() {
@@ -600,10 +596,11 @@ export function FunctionLiteral(stream, retval) {
     return true;
 }
 
-// ParamList -> Empty | ident{, ident}*
+// ...ident must be last in param list.
+// ParamList -> Empty | ident{, ident}* | ...ident | ident{, ident}*{, ...ident}
 export function ParamList(stream, params) {
     let token = stream.next();
-    let status, type, name;
+    let status, type, name, found_variadic = false;
 
     // Empty param list
     if (token.tt === TokenType.RPAREN) {
@@ -612,9 +609,17 @@ export function ParamList(stream, params) {
     }
 
     while (token.tt !== TokenType.RPAREN) {
+        if (found_variadic)
+            return parse_error("Varargs parameters must be last parameter in param list");
         type = null;
+
+        if (token.tt === TokenType.ELLIPSIS) {
+            found_variadic = true;
+            token = stream.next();
+        }
         if (token.tt !== TokenType.Ident)
             return parse_error("Expected ident in param list");
+
         if (params.map(p => p.name).includes(token.lexeme))
             return parse_error(`Redeclaration of param '${token.lexeme}'`)
         name = token.lexeme;
@@ -628,7 +633,9 @@ export function ParamList(stream, params) {
         } else {
             type = Type.Any();
         }
-        params.push(new Param(name, type));
+        let param = new Param(name, type);
+        param.variadic = found_variadic;
+        params.push(param);
         if (token.tt !== TokenType.COMMA && token.tt !== TokenType.RPAREN)
             return parse_error("Param list error");
         if (token.tt == TokenType.RPAREN)
@@ -1796,13 +1803,21 @@ export function call(fn, args) {
     }
 
     const subroutine = fn.toTokenStream();
-    const arg_zip = zip(args, fn.Ftemp.params);
 
     let nested = false;
     symbolTable.addScope();
     typeTable.addScope();
-    for (let [arg, param] of arg_zip)
-        symbolTable.add(param.name, arg);
+    const params = fn.Ftemp.params;
+    for (let i = 0; i < params.length; i++) {
+        let arg = args[i];
+        let param = params[i];
+        if (param.variadic) {
+            symbolTable.add(param.name, Value.fromArray(args.slice(i)));
+            break;
+        } else {
+            symbolTable.add(param.name, arg);
+        }
+    }
     if (fnState.in_function)
         nested = true;
     fnState.in_function = true;
@@ -1832,8 +1847,8 @@ export function FunctionCall(stream, fnval, retval, ident) {
     let token = stream.next();
     if (token.tt !== TokenType.RPAREN)
         return parse_error("Missing closing paren in func call");
-    if (args.length !== fnval.paramCount())
-        return parse_error(`Expected ${fnval.paramCount()} args, got ${args.length}, in function ${ident ?? "anonymous"}`);
+    if (!fnval.okParamCount(args.length))
+        return parse_error(`Expected ${fnval.paramCount()} args, got ${args.length}, in function ${ident}`);
 
     retval.setFromValue(call(fnval, args));
     return true;

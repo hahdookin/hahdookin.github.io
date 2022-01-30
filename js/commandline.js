@@ -584,7 +584,7 @@ log(cur_loc, "");
 goto(Value.fromString("home"));
 
 interpret(`
-`)
+`);
 
 set_time();
 window.setInterval(set_time, 500);
