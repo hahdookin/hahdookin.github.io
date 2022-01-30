@@ -7,9 +7,10 @@ export class Param {
      * @param {String} name
      * @param {Type} type
      */
-    constructor(name, type) {
+    constructor(name, type, variadic=false) {
         this.name = name;
         this.type = type;
+        this.variadic = variadic;
     }
 }
 
@@ -91,6 +92,14 @@ export class Value {
     }
     arity() {
         return this.paramCount();
+    }
+    okParamCount(count) {
+        const has_variadic = this.Ftemp.params.filter(p => p.variadic).length > 0;
+        if (has_variadic) {
+            return count >= this.paramCount() - 1;
+        } else {
+            return count == this.paramCount();
+        }
     }
 
     setNumber(n) {

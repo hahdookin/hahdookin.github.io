@@ -607,12 +607,11 @@ intrinsic_docs["print"] = {
         "Prints arguments' str reps to stdout.",
     ],
     params: [
-        new Param("...args", Type.Any()),
+        new Param("args", Type.Any(), true),
     ],
     returns: {},
 };
-// TODO: This takes a single argument, make it variardic
-function print(args) {
+function print(...args) {
     console.log(args.printFmt());
 }
 add("print", print, false);
@@ -1101,26 +1100,4 @@ function pow(n, x) {
     return Value.fromNumber(Math.pow(n.Ntemp, x.Ntemp));
 }
 add("pow", pow, true);
-
-intrinsic_docs["clamp"] = {
-    desc: [
-        "Returns a number clamped between a min and a max",
-    ],
-    params: [
-        new Param("n", Type.Number()),
-        new Param("min", Type.Number()),
-        new Param("max", Type.Number()),
-    ],
-    returns: {
-        type: Type.Number(),
-        desc: "n clamped between min and max"
-    },
-};
-function clamp(n, min, max) {
-    let res = n.Ntemp;
-    if (res < min.Ntemp) res = min.Ntemp;
-    else if (res > max.Ntemp) res = max.Ntemp;
-    return Value.fromNumber(res);
-}
-add("clamp", clamp, true);
 
