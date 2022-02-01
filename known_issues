@@ -1,2 +1,7 @@
 Input: enum A { a, b = a; }
 Error: Use of undeclared ident 'a' in expression
+Reason: a gets defined as A.a, not global a
+
+Input: let f = fn() {}
+Error: Missing ident in variable decl
+Reason: Parser thinks a comma was read and tries to let decl another variable because no semicolon was found
