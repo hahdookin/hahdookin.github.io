@@ -1,0 +1,16 @@
+# factorial.jess
+
+# A brief example of recursion in the 
+# factorial function.
+
+# Factorial of a number, i.e n!, is equal to:
+# n * (n - 1) * (n - 2) * ... * 2 * 1
+
+fn factorial(x) {
+    if x == 1 || x == 0 {
+        return 1;
+    }
+    return x * factorial(x - 1);
+}
+
+print(concat("5! = ", str(factorial(5))));

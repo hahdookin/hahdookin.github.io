@@ -1,0 +1,13 @@
+# variadic_args.jess
+
+# An example of how to use variadic args (...)
+
+fn my_print(...args) {
+    let fmt = "";
+    for arg in args {
+        fmt = concat(fmt, str(arg));
+    }
+    print(fmt);
+}
+
+my_print("Hello, ", "world", "!");
