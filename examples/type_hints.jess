@@ -1,0 +1,23 @@
+# type_hints.jess
+
+# A demonstration of type hints and type expressions.
+
+typedef Number Bool;
+typedef Array[String] StrList;
+
+fn strlist_has_str(strs: StrList, search: String): Bool {
+    for str in strs {
+        if streq(str, search) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+final strs: StrList = [
+    "apple", 
+    "banana", 
+    "orange"
+];
+print(strlist_has_str(strs, "banana"));
+print(strlist_has_str(strs, "mango"));

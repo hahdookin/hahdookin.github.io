@@ -1,0 +1,33 @@
+# matrix_rotation.jess
+
+# An example of using multi-dimensional arrays.
+
+# Rotate the matrix 90 degrees clock-wise
+#
+# [1, 2, 3]      [7, 4, 1]
+# [4, 5, 6]  ->  [8, 5, 2]
+# [7, 8, 9]      [9, 6, 3]
+#
+fn matrix_rotated_cw(mat) {
+    let height = len(mat);
+    let width = len(mat[0]);
+    let rotated = deepcopy(mat);
+    for y in range(0, len(mat)) {
+        for x in range(0, len(mat[y])) {
+            rotated[x][height - y - 1] = mat[y][x];
+        }
+    }
+    return rotated;
+}
+
+final matrix = [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
+];
+
+final rotated_matrix = matrix_rotated_cw(matrix);
+
+for row in rotated_matrix {
+    print(row);
+}
