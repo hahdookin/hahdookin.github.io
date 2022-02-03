@@ -21,6 +21,20 @@ import {
     operators,
     types
 } from "./token.js";
+import {
+    apply_theme,
+    themes
+} from "./themes.js";
+
+// Create dynamic css for terminal theme
+const style = document.createElement("style");
+style.type = "text/css";
+style.id = "terminal-theme";
+document.getElementsByTagName("head")[0].appendChild(style);
+
+// Set terminal to default theme
+let cur_theme = "vscode";
+apply_theme(cur_theme, style);
 
 const stream = document.getElementsByClassName("stream")[0];
 const prompt = document.getElementsByClassName("edit")[0];
@@ -275,7 +289,8 @@ function docs(fn) {
         fn_docs.params.forEach(param => {
             const name = param.name;
             const type = param.type;
-            print(Value.fromString(`${tab}${name} : ${highlight(type.printFmt())}`), true);
+            const lead = param.variadic ? "..." : "";
+            print(Value.fromString(`${tab}${lead}${name} : ${highlight(type.printFmt())}`), true);
         });
 
     // Print returns
@@ -400,6 +415,56 @@ function upload() {
 }
 add("upload", upload, false);
 
+intrinsic_docs["theme"] = {
+    desc: [
+        "Set the theme of the terminal environment."
+    ],
+    params: [
+        new Param("name", Type.String())
+    ],
+    returns: {},
+}
+function theme(name) {
+    if (name.Stemp !== "random" && !themes.hasOwnProperty(name.Stemp)) {
+        print(Value.fromString("Not an available theme."));
+        return;
+    }
+    apply_theme(name.Stemp, style);
+}
+add("theme", theme, false);
+
+intrinsic_docs["themeinfo"] = {
+    desc: [
+        "Prints info about the terminal theme."
+    ],
+    params: [
+        new Param("name", Type.String(), true)
+    ],
+    returns: {},
+}
+function themeinfo(...name) {
+    // TODO: Finish this function
+    let theme;
+    if (name.length === 0) {
+        // Current theme
+        theme = themes[cur_theme];
+    } else {
+        // Designated theme
+        theme = themes[name[0].Stemp];
+    }
+    print(Value.fromString(`FG: ${theme.normal}`), true);
+    print(Value.fromString(`BG: ${theme.background}`), true);
+    print(Value.fromString(`Edit-line: ${theme.editline}`), true);
+    print(Value.fromString(`${highlight("for, if, while")}: ${theme.keyword}`), true);
+    print(Value.fromString(`${highlight('"string"')}: ${theme.string}`), true);
+    print(Value.fromString(`${highlight('42, 0xABCD')}: ${theme.number}`), true);
+    print(Value.fromString(`${highlight("print()")}: ${theme.function}`), true);
+    print(Value.fromString(`${highlight("String, Array")}: ${theme.type}`), true);
+    print(Value.fromString(`${highlight("# Comments")}: ${theme.comment}`), true);
+    print(Value.fromString(`${highlight("0xf__")}: ${theme.error}`), true);
+}
+add("themeinfo", themeinfo, false);
+
 // Add our CLI intrinsics to the symboltable
 for (const intrinsic in intrinsic_fns)
     symbolTable.add(intrinsic, intrinsic_fns[intrinsic]);
@@ -469,6 +534,9 @@ prompt.addEventListener("keydown", e => {
         // Handle line continuation
         const last = prompt.innerText.trim();
         if (last.charCodeAt(last.length - 1) === 92) // 92 is '\'
+            return;
+        // If a statement isn't fully delimited by braces, don't interpret yet
+        if (!line_is_properly_delimited(prompt.innerText))
             return;
         log(cur_loc, highlighted.innerHTML);
         interpret(prompt.innerText);
@@ -564,6 +632,25 @@ function highlight(line) {
         }
     }
     return res;
+}
+
+function line_is_properly_delimited(line) {
+    let tstream = new TokenStream(line, true);
+    let token = tstream.next();
+    let stack = [];
+    while (token.tt !== TokenType.END) {
+        if (token.tt === TokenType.LPAREN) stack.push("(");
+        if (token.tt === TokenType.RPAREN)
+            if (stack.pop() !== "(") return true; // Outer most bracket has match, we can interpret
+        if (token.tt === TokenType.LBRACK) stack.push("[");
+        if (token.tt === TokenType.RBRACK)
+            if (stack.pop() !== "[") return true; // Outer most bracket has match, we can interpret
+        if (token.tt === TokenType.LBRACE) stack.push("{");
+        if (token.tt === TokenType.RBRACE)
+            if (stack.pop() !== "{") return true; // Outer most bracket has match, we can interpret
+        token = tstream.next();
+    }
+    return stack.length === 0;
 }
 
 prompt.addEventListener("input", e => {
